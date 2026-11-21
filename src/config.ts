@@ -24,9 +24,10 @@ export const config = {
   pinch: { on: 0.3, off: 0.45, ringColor: "#00e5ff", fillColor: "#ffffff", radius: 12 },
   handHoldMs: 100, // keep a vanished hand this long (SPEC §9) so one missed frame doesn't break a pinch
   minStringLength: 80, // px; shorter pinches are discarded
+  minDrawMs: 200, // a two-hand pinch held shorter than this is tracking noise, not a draw
   maxStrings: 12,
   stringFadeMs: 400,
-  string: { color: "#ffffff", width: 3, anchorRadius: 6 },
+  string: { color: "#ffffff", width: 4, anchorRadius: 7 },
   preview: { color: "#00e5ff", width: 2, anchorRadius: 8, dash: [10, 8] },
   music: {
     scale: "majorPentatonic" as ScaleId,
@@ -41,6 +42,10 @@ export const config = {
   vibration: { modes: 6, samples: 48, damping: 2.5, maxAmplitudePx: 26, freqBase: 6, freqRange: 10, restEnergy: 0.002 },
   // Effect intensity (SPEC §10.6): glow passes, blur on the wide pass (px), particle count multiplier.
   visuals: {
+    // Additive glow on a bright (daylight) video saturates to white and the hues vanish:
+    // dim the video a little and put a dark underlay beneath each string for contrast.
+    videoDim: 0.35, // 0..1 black overlay on the camera image
+    underlay: 0.55, // 0..1 alpha of the dark line drawn under each string
     intensity: "medium" as Intensity,
     levels: {
       low: { passes: 1, blur: 0, particles: 0.4 },
@@ -49,7 +54,7 @@ export const config = {
     } satisfies Record<Intensity, { passes: number; blur: number; particles: number }>,
     maxDtSec: 0.05, // clamp physics dt so a tab switch doesn't explode particles
   },
-  particles: { pool: 600, minCount: 20, maxCount: 40, speed: 600, spread: 0.6, gravity: 400, lifeMin: 0.4, lifeMax: 0.9, radius: 2.5 },
+  particles: { pool: 1200, minCount: 40, maxCount: 80, speed: 700, spread: 0.7, gravity: 400, lifeMin: 0.5, lifeMax: 1.1, radius: 3.5 },
   pluckCooldownMs: 120, // per (string, finger): one swipe = one pluck
   pluckMaxVelocity: 3000, // px/s that maps to velocity 1
   pluckMinVelocity: 0.15, // floor so gentle touches still sound
@@ -66,9 +71,6 @@ export const config = {
   },
   hints: { noHandsMs: 3000, tooCloseFrac: 0.3, darkLuma: 45 },
   idle: { noHandsMs: 60000 }, // no hands this long while PLAYING -> camera off + Resume overlay (SPEC §10.8)
-  // Open-palm clear (SPEC §3.3): both palms open AND still for holdMs. maxWristSpeed (px/s) keeps
-  // strumming with open hands from clearing; extendFactor: dist(wrist,tip) must beat this x dist(wrist,pip).
-  palmClear: { holdMs: 1000, maxWristSpeed: 250, extendFactor: 1.15, ringColor: "#ff5577", ringWidth: 6, ringScale: 1.1 },
   // Record & share (SPEC §10.7). Order = preference: mp4 where the browser can, else webm.
   recorder: {
     maxSeconds: 60,

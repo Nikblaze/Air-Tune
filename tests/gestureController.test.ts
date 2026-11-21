@@ -34,7 +34,7 @@ describe("gestureController", () => {
   it("commits the LAST preview on release, not the post-release positions", () => {
     const g = createGestureController();
     g.update([H("L", 0), H("R", 300)], 0);
-    const o = g.update([H("L", 0), H("R", 999, false)], 1);
+    const o = g.update([H("L", 0), H("R", 999, false)], config.minDrawMs);
     expect(o.state).toBe("IDLE");
     expect(o.commit).toEqual({ a: { x: 0, y: 0 }, b: { x: 300, y: 0 } });
     expect(o.preview).toBeNull();
@@ -49,10 +49,19 @@ describe("gestureController", () => {
     expect(o.commit).toBeNull();
   });
 
-  it("one hand lost commits using the last preview", () => {
+  it("a drawing hand that vanishes cancels (no phantom string when hands leave the frame)", () => {
     const g = createGestureController();
     g.update([H("L", 0), H("R", 300)], 0);
-    const o = g.update([H("L", 0)], 1);
-    expect(o.commit).toEqual({ a: { x: 0, y: 0 }, b: { x: 300, y: 0 } });
+    const o = g.update([H("L", 0)], config.minDrawMs + 100);
+    expect(o.state).toBe("IDLE");
+    expect(o.commit).toBeNull();
+  });
+
+  it("a pinch released before minDrawMs is noise, not a string", () => {
+    const g = createGestureController();
+    g.update([H("L", 0), H("R", 300)], 0);
+    const o = g.update([H("L", 0), H("R", 300, false)], config.minDrawMs - 1);
+    expect(o.state).toBe("IDLE");
+    expect(o.commit).toBeNull();
   });
 });

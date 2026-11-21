@@ -52,7 +52,7 @@ Webcam (getUserMedia)
 
 ### 3.3 Remove strings
 - Keyboard: `Z` undo last, `C` clear all.
-- Gesture (Phase 6): both palms open, held 1 s → clear all.
+- ~~Gesture: both palms open, held 1 s → clear all.~~ Removed after playtesting: releasing a pinch naturally leaves both palms open, so it cleared strings by accident.
 
 ## 4. Music mapping
 - **Physics:** for a real string, `f = (1 / 2L) · √(T / μ)` → frequency ∝ 1/length.
@@ -171,7 +171,7 @@ tests/
 | 3.5 | Tutorial (§10.4), basic settings drawer (scale, root, volume, skeleton toggle) | Friends can try it with no explanation |
 | 4 | Modal vibration, glow passes, pitch-class colours, particle sparks | Looks like the reel |
 | 5 | Karplus-Strong AudioWorklet, pluck-position + velocity timbre, stereo pan, reverb | Sounds like a real harp/guitar |
-| 6 | Full settings (instrument, Free vs Scale mode, camera picker), recorder (§10.7), pause/idle (§10.8), help + meeting tip, open-palm clear gesture, saved layouts, deploy to GitHub Pages | Shareable link + reel of your own |
+| 6 | Full settings (instrument, Free vs Scale mode, camera picker), recorder (§10.7), pause/idle (§10.8), help + meeting tip, saved layouts, deploy (Cloudflare) | Shareable link + reel of your own |
 
 ### Stretch ideas
 - **Loop recorder:** record pluck events with timestamps, replay in a loop, layer on top.
@@ -260,7 +260,7 @@ A step that isn't completed in 10 s shows a small looping hint animation for tha
 - Strings, settings and the current layout survive pause.
 
 ### 10.9 Help overlay
-- Gesture cheatsheet (pinch-draw, swipe-pluck, open-palm clear).
+- Gesture cheatsheet (pinch-draw, swipe-pluck).
 - Keyboard shortcuts.
 - **Play in a meeting:** "In Google Meet or Teams, choose Present / Share → this tab → turn on *Also share tab audio*."
 

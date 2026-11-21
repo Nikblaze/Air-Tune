@@ -12,7 +12,7 @@ export function createHelp() {
       <li><b>Draw:</b> pinch with both hands, then pull them apart.</li>
       <li><b>Pluck:</b> swipe a fingertip through a string.</li>
       <li><b>Strum:</b> sweep across several strings.</li>
-      <li><b>Clear all:</b> open both palms and hold for 1 second.</li>
+      <li><b>Clear all:</b> press C or the Clear button.</li>
     </ul>
     <h3>Keyboard</h3>
     <ul>

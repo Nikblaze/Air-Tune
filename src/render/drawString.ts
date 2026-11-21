@@ -39,27 +39,35 @@ function trace(ctx: CanvasRenderingContext2D, n: number) {
   ctx.stroke();
 }
 
+/** Dark line under the string (normal blending) so the additive colour still reads on a bright background. */
+function underlay(ctx: CanvasRenderingContext2D, alpha: number, width: number, path: () => void) {
+  ctx.globalCompositeOperation = "source-over";
+  ctx.strokeStyle = "#000";
+  ctx.globalAlpha = alpha * config.visuals.underlay;
+  ctx.lineWidth = width * 3;
+  path();
+}
+
 export function drawString(ctx: CanvasRenderingContext2D, s: StringEntity, alpha: number, now: number, noteText: string): void {
   const { width, anchorRadius, color: coreColor } = config.string;
   const v = config.vibration;
   const lvl = config.visuals.levels[config.visuals.intensity];
-  const colour = `hsl(${pitchHue(s.midi)}, 100%, 65%)`;
+  const colour = `hsl(${pitchHue(s.midi)}, 100%, 60%)`; // fully saturated: hue must survive daylight
   const t = s.lastPluck ? (now - s.lastPluck.at) / 1000 : 0;
   // Fraction of the pluck energy left (1 right after the pluck, ->0 as it settles).
   const rel = s.lastPluck && s.e0 > 0 ? energy(t, s.coeffs, v.damping) / s.e0 : 0;
 
   ctx.save();
-  ctx.globalAlpha = alpha;
-  ctx.globalCompositeOperation = "lighter"; // overlapping light adds up: that is the glow
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   if (rel < v.restEnergy) {
     // Resting: skip the mode sum and blur entirely so 12 idle strings stay cheap.
+    underlay(ctx, alpha, width, () => line(ctx, s.a, s.b));
+    ctx.globalCompositeOperation = "lighter";
     ctx.strokeStyle = colour;
     ctx.lineWidth = width;
-    ctx.globalAlpha = alpha * 0.7; // faint pitch tint
-    line(ctx, s.a, s.b);
     ctx.globalAlpha = alpha;
+    line(ctx, s.a, s.b);
   } else {
     // Glow ∝ sqrt(energy ratio): amplitude-like, so it fades gently rather than collapsing.
     const g = Math.sqrt(rel);
@@ -76,6 +84,8 @@ export function drawString(ctx: CanvasRenderingContext2D, s: StringEntity, alpha
       pts[2 * i] = s.a.x + dx * x + nx * d;
       pts[2 * i + 1] = s.a.y + dy * x + ny * d;
     }
+    underlay(ctx, alpha, width, () => trace(ctx, n));
+    ctx.globalCompositeOperation = "lighter"; // overlapping light adds up: that is the glow
     if (lvl.passes > 1) {
       // Wide soft halo. shadowBlur is the expensive part, so only this pass gets it.
       ctx.strokeStyle = colour;

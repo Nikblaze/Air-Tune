@@ -5,8 +5,7 @@ import { config } from "./config";
 import { getAudio } from "./audio/engine";
 import { lengthToMidi, midiToHz, noteName, pitchHue, SCALES, tickFractions, type MusicOpts } from "./core/music";
 import { createParticles } from "./core/particles";
-import { isOpenPalm, palmHold, palmHoldInitial } from "./core/palm";
-import { dist, mid } from "./core/vec2";
+import { dist } from "./core/vec2";
 import { bus } from "./events";
 import { render } from "./render/renderer";
 import { createGestureController } from "./scene/gestureController";
@@ -16,7 +15,6 @@ import { createHints } from "./ui/hints";
 import { initHud } from "./ui/hud";
 import { createRecorder, recorderSupported } from "./ui/recorder";
 import { createSettingsDrawer } from "./ui/settingsDrawer";
-import { LM } from "./core/pinch";
 import { startTutorial } from "./ui/tutorial";
 import { createFingerTracker } from "./tracking/fingerTracker";
 import { coverTransform } from "./tracking/coords";
@@ -273,10 +271,6 @@ async function requestCamera() {
   });
 
   let noHandsSince: number | null = null;
-  // Open-palm clear (SPEC §3.3): wrist speed per hand (px/s, refreshed per NEW detection) tells "still" from strumming.
-  const wristPrev = new Map<string, { p: { x: number; y: number }; t: number }>();
-  const wristSpeed = new Map<string, number>();
-  let palm = palmHoldInitial();
   const frame = (now: number) => {
     if (app.get() === "PAUSED") {
       last = now; // no huge dt on resume
@@ -299,13 +293,6 @@ async function requestCamera() {
       lastDetect = now;
       // Once per NEW detection: p0->p1 must span exactly one detection, not one render frame.
       manager.detectPlucks(fingers.update(hands, now), now);
-      for (const h of hands) {
-        if (h.held) continue;
-        const w = h.points[LM.WRIST];
-        const prev = wristPrev.get(h.label);
-        wristSpeed.set(h.label, prev ? dist(prev.p, w) / Math.max((now - prev.t) / 1000, 1e-3) : Infinity);
-        wristPrev.set(h.label, { p: w, t: now });
-      }
     }
     const g = gesture.update(hands, now);
     const opts = musicOpts();
@@ -318,21 +305,6 @@ async function requestCamera() {
       noHandsSince ??= now;
       if (now - noHandsSince >= config.idle.noHandsMs) pause("idle");
     } else noHandsSince = null;
-    // Palm clear only while playing (not tutorial, not mid-draw); recording counts as playing.
-    const pc = config.palmClear;
-    const live = (app.get() === "PLAYING" || app.get() === "RECORDING") && !tutorial && g.state === "IDLE";
-    const open = live ? hands.filter((h) => !h.held && isOpenPalm(h.points, pc.extendFactor, config.pinch.off)) : [];
-    const still = open.every((h) => (wristSpeed.get(h.label) ?? Infinity) < pc.maxWristSpeed);
-    const ph = palmHold(palm, { openCount: open.length, still, now }, pc.holdMs);
-    palm = ph.state;
-    if (ph.fire) clearAll();
-    const palmRings =
-      ph.progress > 0
-        ? open.map((h) => {
-            const [w, m] = [h.points[LM.WRIST], h.points[LM.MIDDLE_MCP]];
-            return { center: mid(w, m), radius: dist(w, m) * pc.ringScale, progress: ph.progress };
-          })
-        : [];
     manager.update(now);
     particles.update(dt);
     tutorial?.update(hands, g.state, now); // after manager.add so a commit's stringCreated is seen this frame
@@ -344,7 +316,7 @@ async function requestCamera() {
       color: `hsl(${pitchHue(previewMidi)}, 100%, 65%)`,
       ticks: tickFractions(len, opts),
     };
-    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), now, preview, hands, particles, palmRings });
+    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), now, preview, hands, particles });
     hints.update({ hands, now, video });
     hud.setLabel(
       config.music.pitchMode === "free" ? "Free pitch" : `${noteName(config.music.rootMidi)} \u00b7 ${SCALES[config.music.scale].name}`,
