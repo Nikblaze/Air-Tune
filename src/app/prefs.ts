@@ -1,5 +1,6 @@
 // Persisted user prefs (SPEC §10.6). Storage is injected so tests don't need a browser.
 import { config, INTENSITIES, type Intensity } from "../config";
+import { INSTRUMENTS, type InstrumentId } from "../core/karplus";
 import { SCALES, type ScaleId } from "../core/music";
 
 export interface Prefs {
@@ -9,6 +10,7 @@ export interface Prefs {
   volume: number;
   showSkeleton: boolean;
   intensity: Intensity;
+  instrument: InstrumentId;
 }
 
 const KEY = "airStrings.prefs.v1";
@@ -21,6 +23,7 @@ const DEFAULTS: Prefs = {
   volume: config.audio.volume,
   showSkeleton: config.debug.showSkeleton,
   intensity: config.visuals.intensity,
+  instrument: config.audio.instrument,
 };
 
 // localStorage access itself can throw (blocked storage), so even the default is guarded.
@@ -45,6 +48,7 @@ export function loadPrefs(storage: Pick<Storage, "getItem"> | null = defaultStor
       volume: Math.min(1, Math.max(0, num(raw.volume, DEFAULTS.volume))),
       showSkeleton: typeof raw.showSkeleton === "boolean" ? raw.showSkeleton : DEFAULTS.showSkeleton,
       intensity: INTENSITIES.includes(raw.intensity) ? raw.intensity : DEFAULTS.intensity,
+      instrument: Object.hasOwn(INSTRUMENTS, raw.instrument) ? raw.instrument : DEFAULTS.instrument,
     };
   } catch {
     return { ...DEFAULTS };
@@ -65,4 +69,5 @@ export function applyPrefs(p: Prefs): void {
   config.audio.volume = p.volume;
   config.debug.showSkeleton = p.showSkeleton;
   config.visuals.intensity = p.intensity;
+  config.audio.instrument = p.instrument;
 }

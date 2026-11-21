@@ -1,5 +1,6 @@
 import GUI from "lil-gui";
 import { INTENSITIES, type config as Config } from "../config";
+import { INSTRUMENTS } from "../core/karplus";
 import { SCALES } from "../core/music";
 
 /** Live tuning panel. Hidden by default; press D to toggle. */
@@ -27,6 +28,7 @@ export function createDebugPanel(config: typeof Config): GUI {
   const audio = gui.addFolder("Audio");
   audio.add(config.audio, "volume", 0, 1, 0.01);
   audio.add(config.audio, "reverb", 0, 1, 0.01);
+  audio.add(config.audio, "instrument", Object.keys(INSTRUMENTS));
   const pluck = gui.addFolder("Pluck");
   pluck.add(config, "pluckCooldownMs", 0, 500, 10);
   pluck.add(config, "pluckMaxVelocity", 500, 6000, 100);

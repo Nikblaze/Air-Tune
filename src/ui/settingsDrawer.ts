@@ -1,5 +1,6 @@
 // Right-side settings drawer (SPEC §10.6, v1 subset). An overlay on PLAYING, not an app state.
 import { config, INTENSITIES, type Intensity } from "../config";
+import { INSTRUMENTS, type InstrumentId } from "../core/karplus";
 import { SCALES, type ScaleId } from "../core/music";
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -19,6 +20,7 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
     <label>Root note <span class="row">
       <select data-k="note" aria-label="Note">${options(NOTES.map((n, i) => [i, n]))}</select>
       <select data-k="octave" aria-label="Octave">${options(OCTAVES.map((o) => [o, String(o)]))}</select></span></label>
+    <label>Instrument <select data-k="instrument">${options(Object.keys(INSTRUMENTS).map((i) => [i, i[0].toUpperCase() + i.slice(1)]))}</select></label>
     <label>Volume <input type="range" data-k="volume" min="0" max="1" step="0.01" /></label>
     <label>Effect intensity <select data-k="intensity">${options(INTENSITIES.map((i) => [i, i[0].toUpperCase() + i.slice(1)]))}</select></label>
     <label class="check"><input type="checkbox" data-k="skeleton" /> Hand skeleton</label>
@@ -27,7 +29,7 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
   const f = <T extends HTMLElement>(k: string) => el.querySelector<T>(`[data-k="${k}"]`)!;
   const scale = f<HTMLSelectElement>("scale"), note = f<HTMLSelectElement>("note"), octave = f<HTMLSelectElement>("octave");
   const volume = f<HTMLInputElement>("volume"), skeleton = f<HTMLInputElement>("skeleton");
-  const intensity = f<HTMLSelectElement>("intensity");
+  const intensity = f<HTMLSelectElement>("intensity"), instrument = f<HTMLSelectElement>("instrument");
 
   const sync = () => {
     scale.value = config.music.scale;
@@ -36,6 +38,7 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
     volume.value = String(config.audio.volume);
     skeleton.checked = config.debug.showSkeleton;
     intensity.value = config.visuals.intensity;
+    instrument.value = config.audio.instrument;
   };
 
   const open = () => {
@@ -54,6 +57,7 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
     config.audio.volume = Number(volume.value);
     config.debug.showSkeleton = skeleton.checked;
     config.visuals.intensity = intensity.value as Intensity;
+    config.audio.instrument = instrument.value as InstrumentId;
     onChange();
   });
   el.querySelector("[data-close]")!.addEventListener("click", close);

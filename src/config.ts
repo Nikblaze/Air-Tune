@@ -1,4 +1,5 @@
 // All tunable numbers live here (no magic numbers in logic files).
+import type { InstrumentId } from "./core/karplus";
 import type { ScaleId } from "./core/music";
 
 export const INTENSITIES = ["low", "medium", "high"] as const;
@@ -52,7 +53,15 @@ export const config = {
   pluckMaxVelocity: 3000, // px/s that maps to velocity 1
   pluckMinVelocity: 0.15, // floor so gentle touches still sound
   maxFingerJumpPx: 400, // bigger per-detection jump = tracking glitch, not a strum (SPEC §9)
-  audio: { volume: 0.8, reverb: 0.3, reverbSeconds: 2, voiceGain: 0.5, decaySeconds: 1.6 },
+  audio: {
+    volume: 0.8,
+    reverb: 0.3,
+    reverbSeconds: 2,
+    voiceGain: 0.5, // Phase 3 fallback voice
+    decaySeconds: 1.6, // Phase 3 fallback voice
+    instrument: "harp" as InstrumentId,
+    karplusGain: 0.35, // worklet voices peak near 1 and sum; leave headroom for the compressor
+  },
   hints: { noHandsMs: 3000, tooCloseFrac: 0.3, darkLuma: 45 },
   tutorial: { hintAfterMs: 10000, doneShowMs: 1200 },
   debug: { showSkeleton: true },

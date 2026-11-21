@@ -114,6 +114,7 @@ async function requestCamera() {
         volume: config.audio.volume,
         showSkeleton: config.debug.showSkeleton,
         intensity: config.visuals.intensity,
+        instrument: config.audio.instrument,
       });
       savePrefs(prefs);
     },
