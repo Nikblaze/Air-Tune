@@ -1,21 +1,24 @@
 // Pure screen state machine (SPEC §10.1). No DOM.
-// TUTORIAL / PAUSED / RECORDING etc. arrive in later phases.
+// PAUSED / RECORDING etc. arrive in later phases.
 export type AppState =
   | "LANDING"
   | "REQUESTING_CAMERA"
   | "CAMERA_DENIED"
   | "NO_CAMERA"
   | "LOADING_MODEL"
+  | "TUTORIAL"
   | "PLAYING";
 
-export type AppEvent = "start" | "granted" | "denied" | "noDevice" | "retry" | "modelReady";
+export type AppEvent = "start" | "granted" | "denied" | "noDevice" | "retry" | "modelReady" | "modelReadyReturning" | "tutorialDone";
 
 const table: Record<AppState, Partial<Record<AppEvent, AppState>>> = {
   LANDING: { start: "REQUESTING_CAMERA" },
   REQUESTING_CAMERA: { granted: "LOADING_MODEL", denied: "CAMERA_DENIED", noDevice: "NO_CAMERA" },
   CAMERA_DENIED: { retry: "REQUESTING_CAMERA" },
   NO_CAMERA: { retry: "REQUESTING_CAMERA" },
-  LOADING_MODEL: { modelReady: "PLAYING" },
+  // First-time users get the tutorial; returning users (prefs.tutorialDone) skip it.
+  LOADING_MODEL: { modelReady: "TUTORIAL", modelReadyReturning: "PLAYING" },
+  TUTORIAL: { tutorialDone: "PLAYING" }, // finishing and Skip are the same event
   PLAYING: {},
 };
 

@@ -1,3 +1,4 @@
+import { applyPrefs, loadPrefs, savePrefs } from "./app/prefs";
 import { createAppState, type AppState } from "./app/appState";
 import { config } from "./config";
 import { getAudio } from "./audio/engine";
@@ -9,6 +10,8 @@ import { createGestureController } from "./scene/gestureController";
 import { StringManager } from "./scene/StringManager";
 import { createHints } from "./ui/hints";
 import { initHud } from "./ui/hud";
+import { createSettingsDrawer } from "./ui/settingsDrawer";
+import { startTutorial } from "./ui/tutorial";
 import { createFingerTracker } from "./tracking/fingerTracker";
 import { coverTransform } from "./tracking/coords";
 import { processResult, type Hand } from "./tracking/pipeline";
@@ -24,10 +27,15 @@ const sectionFor: Record<AppState, string> = {
   CAMERA_DENIED: "denied",
   NO_CAMERA: "no-camera",
   LOADING_MODEL: "loading",
+  TUTORIAL: "stage", // same canvas as PLAYING: drawing and plucking work during the tutorial
   PLAYING: "stage",
 };
 
+const prefs = loadPrefs();
+applyPrefs(prefs);
+
 const app = createAppState((state) => {
+  document.body.dataset.state = state; // CSS shows the HUD / settings only in PLAYING
   document.querySelectorAll("section").forEach((s) => (s.hidden = s.id !== sectionFor[state]));
 });
 
@@ -62,7 +70,14 @@ async function requestCamera() {
   } catch {
     return; // error text already shown in #loading
   }
-  app.send("modelReady");
+  app.send(prefs.tutorialDone ? "modelReadyReturning" : "modelReady");
+  const finishTutorial = () => {
+    tutorial = null;
+    prefs.tutorialDone = true;
+    savePrefs(prefs);
+    app.send("tutorialDone");
+  };
+  let tutorial = app.get() === "TUTORIAL" ? startTutorial({ bus, onDone: finishTutorial }) : null;
   const ctx = canvas.getContext("2d")!;
   // Backing store is dpr-scaled; the transform lets all drawing code use CSS pixels.
   const resize = () => {
@@ -84,7 +99,22 @@ async function requestCamera() {
   const manager = new StringManager(bus);
   const fingers = createFingerTracker();
   const hints = createHints();
-  const hud = initHud({ onUndo: () => manager.undo(performance.now()), onClear: () => manager.clear(performance.now()) });
+  const hud = initHud({
+    onUndo: () => manager.undo(performance.now()),
+    onClear: () => manager.clear(performance.now()),
+    onSettings: () => drawer.open(),
+  });
+  const drawer = createSettingsDrawer({
+    onChange() {
+      Object.assign(prefs, {
+        scale: config.music.scale,
+        rootMidi: config.music.rootMidi,
+        volume: config.audio.volume,
+        showSkeleton: config.debug.showSkeleton,
+      });
+      savePrefs(prefs);
+    },
+  });
 
   // Built per call so debug-panel edits and window resizes apply immediately.
   const musicOpts = (): MusicOpts => ({
@@ -126,6 +156,7 @@ async function requestCamera() {
       manager.add(g.commit.a, g.commit.b, now, { midi, hz: midiToHz(midi) });
     }
     manager.update(now);
+    tutorial?.update(hands, g.state, now); // after manager.add so a commit's stringCreated is seen this frame
     const len = g.preview ? dist(g.preview.a, g.preview.b) : 0;
     const preview = g.preview && {
       ...g.preview,

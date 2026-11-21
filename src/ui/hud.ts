@@ -1,17 +1,20 @@
 const HIDE_AFTER_MS = 3000;
 
 /** Top-right icon bar (DOM, not canvas, so recordings stay clean) + keyboard shortcuts. */
-export function initHud(h: { onUndo: () => void; onClear: () => void }) {
+export function initHud(h: { onUndo: () => void; onClear: () => void; onSettings: () => void }) {
   const bar = document.createElement("div");
   bar.id = "hud";
   bar.innerHTML = `
     <span id="hud-label"></span>
     <button type="button" data-act="undo" aria-label="Undo (Z)" title="Undo (Z)">↶</button>
-    <button type="button" data-act="clear" aria-label="Clear all (C)" title="Clear all (C)">✕</button>`;
+    <button type="button" data-act="clear" aria-label="Clear all (C)" title="Clear all (C)">✕</button>
+    <button type="button" data-act="settings" aria-label="Settings" title="Settings">⚙</button>`;
   document.body.append(bar);
   const labelEl = bar.querySelector<HTMLElement>("#hud-label")!;
   bar.querySelector('[data-act="undo"]')!.addEventListener("click", h.onUndo);
   bar.querySelector('[data-act="clear"]')!.addEventListener("click", h.onClear);
+
+  bar.querySelector('[data-act="settings"]')!.addEventListener("click", h.onSettings);
 
   let hidden = false; // H toggle: fully off
   let idle: number;

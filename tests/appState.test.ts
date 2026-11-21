@@ -8,8 +8,15 @@ const run = (events: AppEvent[]) => {
 };
 
 describe("appState", () => {
-  it("happy path reaches PLAYING", () => {
-    expect(run(["start", "granted", "modelReady"])).toBe("PLAYING");
+  it("first visit goes through TUTORIAL", () => {
+    expect(run(["start", "granted", "modelReady"])).toBe("TUTORIAL");
+    expect(run(["start", "granted", "modelReady", "tutorialDone"])).toBe("PLAYING");
+  });
+  it("returning user skips TUTORIAL", () => {
+    expect(run(["start", "granted", "modelReadyReturning"])).toBe("PLAYING");
+  });
+  it("tutorialDone is a no-op outside TUTORIAL", () => {
+    expect(transition("PLAYING", "tutorialDone")).toBe("PLAYING");
   });
   it("denied -> retry -> granted", () => {
     expect(run(["start", "denied"])).toBe("CAMERA_DENIED");
