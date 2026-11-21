@@ -1,5 +1,4 @@
 // Pure screen state machine (SPEC §10.1). No DOM.
-// RECORDING etc. arrive in later phases.
 export type AppState =
   | "LANDING"
   | "REQUESTING_CAMERA"
@@ -8,9 +7,11 @@ export type AppState =
   | "LOADING_MODEL"
   | "TUTORIAL"
   | "PLAYING"
-  | "PAUSED";
+  | "PAUSED"
+  | "RECORDING"
+  | "RECORD_PREVIEW";
 
-export type AppEvent = "start" | "granted" | "denied" | "noDevice" | "retry" | "modelReady" | "modelReadyReturning" | "tutorialDone" | "pause" | "resume";
+export type AppEvent = "start" | "granted" | "denied" | "noDevice" | "retry" | "modelReady" | "modelReadyReturning" | "tutorialDone" | "pause" | "resume" | "record" | "stopRecord" | "closePreview";
 
 const table: Record<AppState, Partial<Record<AppEvent, AppState>>> = {
   LANDING: { start: "REQUESTING_CAMERA" },
@@ -20,8 +21,10 @@ const table: Record<AppState, Partial<Record<AppEvent, AppState>>> = {
   // First-time users get the tutorial; returning users (prefs.tutorialDone) skip it.
   LOADING_MODEL: { modelReady: "TUTORIAL", modelReadyReturning: "PLAYING" },
   TUTORIAL: { tutorialDone: "PLAYING" }, // finishing and Skip are the same event
-  PLAYING: { pause: "PAUSED" },
+  PLAYING: { pause: "PAUSED", record: "RECORDING" },
   PAUSED: { resume: "PLAYING" },
+  RECORDING: { stopRecord: "RECORD_PREVIEW" }, // no pause here: a hidden tab stops the recording instead
+  RECORD_PREVIEW: { closePreview: "PLAYING" }, // Download keeps the preview open; Re-record = close + countdown
 };
 
 /** Invalid events leave the state unchanged. */

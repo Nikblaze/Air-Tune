@@ -35,6 +35,18 @@ describe("appState", () => {
     expect(transition("PLAYING", "resume")).toBe("PLAYING");
     expect(transition("PAUSED", "pause")).toBe("PAUSED");
   });
+  it("PLAYING -> RECORDING -> RECORD_PREVIEW -> PLAYING", () => {
+    expect(transition("PLAYING", "record")).toBe("RECORDING");
+    expect(transition("RECORDING", "stopRecord")).toBe("RECORD_PREVIEW");
+    expect(transition("RECORD_PREVIEW", "closePreview")).toBe("PLAYING");
+  });
+  it("record only starts from PLAYING; recording cannot be paused", () => {
+    expect(transition("TUTORIAL", "record")).toBe("TUTORIAL");
+    expect(transition("PAUSED", "record")).toBe("PAUSED");
+    expect(transition("RECORD_PREVIEW", "record")).toBe("RECORD_PREVIEW");
+    expect(transition("RECORDING", "pause")).toBe("RECORDING");
+    expect(transition("PLAYING", "stopRecord")).toBe("PLAYING");
+  });
   it("invalid event is a no-op", () => {
     expect(transition("LANDING", "modelReady")).toBe("LANDING");
     const changes: string[] = [];

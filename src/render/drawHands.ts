@@ -1,5 +1,6 @@
 import { HandLandmarker } from "@mediapipe/tasks-vision";
 import { config } from "../config";
+import type { Vec2 } from "../core/vec2";
 import type { Hand } from "../tracking/pipeline";
 
 /** Hands are already in canvas pixels (see tracking/coords.ts). */
@@ -34,5 +35,23 @@ export function drawHands(ctx: CanvasRenderingContext2D, hands: readonly Hand[])
         ctx.stroke();
       }
     }
+  }
+}
+
+export interface PalmRing {
+  center: Vec2;
+  radius: number;
+  progress: number; // 0..1
+}
+
+/** Open-palm clear progress (SPEC §3.3): an arc that fills clockwise from 12 o'clock. Gameplay feedback, so it is on the canvas. */
+export function drawPalmRings(ctx: CanvasRenderingContext2D, rings: readonly PalmRing[]): void {
+  ctx.strokeStyle = config.palmClear.ringColor;
+  ctx.lineWidth = config.palmClear.ringWidth;
+  ctx.lineCap = "round";
+  for (const r of rings) {
+    ctx.beginPath();
+    ctx.arc(r.center.x, r.center.y, r.radius, -Math.PI / 2, -Math.PI / 2 + r.progress * Math.PI * 2);
+    ctx.stroke();
   }
 }

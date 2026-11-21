@@ -16,6 +16,10 @@ function createEngine() {
   master.connect(comp);
   comp.connect(dry).connect(ctx.destination);
   comp.connect(reverb).connect(wet).connect(ctx.destination);
+  // The recorder taps the same final dry+wet sum the speakers get (SPEC §10.7).
+  const recordDest = ctx.createMediaStreamDestination();
+  dry.connect(recordDest);
+  wet.connect(recordDest);
 
   // Karplus-Strong worklet loads async; until it is ready plucks use the Phase 3 oscillator voice.
   const synthGain = new GainNode(ctx);
@@ -32,6 +36,7 @@ function createEngine() {
   return {
     resume: () => ctx.resume(),
     suspend: () => ctx.suspend(),
+    recordStream: () => recordDest.stream,
     pluck({ hz, velocity, pan }: { hz: number; velocity: number; pan: number }) {
       // Read live so debug-panel edits apply to the next note.
       master.gain.value = config.audio.volume;

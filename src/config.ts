@@ -66,6 +66,18 @@ export const config = {
   },
   hints: { noHandsMs: 3000, tooCloseFrac: 0.3, darkLuma: 45 },
   idle: { noHandsMs: 60000 }, // no hands this long while PLAYING -> camera off + Resume overlay (SPEC §10.8)
+  // Open-palm clear (SPEC §3.3): both palms open AND still for holdMs. maxWristSpeed (px/s) keeps
+  // strumming with open hands from clearing; extendFactor: dist(wrist,tip) must beat this x dist(wrist,pip).
+  palmClear: { holdMs: 1000, maxWristSpeed: 250, extendFactor: 1.15, ringColor: "#ff5577", ringWidth: 6, ringScale: 1.1 },
+  // Record & share (SPEC §10.7). Order = preference: mp4 where the browser can, else webm.
+  recorder: {
+    maxSeconds: 60,
+    fps: 30,
+    countdownFrom: 3,
+    timesliceMs: 1000,
+    mimeTypes: ["video/mp4;codecs=avc1,mp4a.40.2", "video/mp4", "video/webm;codecs=vp9,opus", "video/webm"],
+  },
+  layout: { saveDebounceMs: 500 },
   tutorial: { hintAfterMs: 10000, doneShowMs: 1200 },
   debug: { showSkeleton: true },
 };

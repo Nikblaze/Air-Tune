@@ -21,7 +21,7 @@
   #hud[hidden] { display: none; }
   #hud button { font-size: 16px; padding: 2px 10px; background: transparent; color: inherit; border: 1px solid #fff4; }
   /* HUD and settings only exist visually in PLAYING (main.ts sets body[data-state]) */
-  body:not([data-state="PLAYING"]) :is(#hud, #settings, #help) { display: none; }
+  body:not([data-state="PLAYING"]):not([data-state="RECORDING"]) :is(#hud, #settings, #help) { display: none; }
   #tutorial { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); width: min(360px, calc(100vw - 32px)); box-sizing: border-box; padding: 12px 16px; border-radius: 16px; background: rgba(0,0,0,.65); text-align: center; pointer-events: auto; }
   .tut-head { display: flex; align-items: center; justify-content: space-between; font-size: 13px; opacity: .8; }
   .tut-skip { font-size: 13px; padding: 0; background: none; color: inherit; text-decoration: underline; }
@@ -57,6 +57,17 @@
   #resume[hidden] { display: none; }
   #hint { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 999px; background: rgba(0,0,0,.65); pointer-events: none; }
   #hint[hidden] { display: none; }
+  #countdown { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 30vmin; font-weight: 700; color: #fff; text-shadow: 0 0 40px #000a; pointer-events: none; }
+  #countdown[hidden], #rec[hidden] { display: none; }
+  #rec { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; background: rgba(0,0,0,.55); font: 16px monospace; }
+  #rec::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: #ff2b2b; animation: tut-pulse 1s ease-in-out infinite; }
+  #hud button[data-act="record"] { color: #ff4d4d; }
+  #hud button:disabled { opacity: .4; cursor: not-allowed; }
+  #rec-preview { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; background: rgba(0,0,0,.8); }
+  #rec-preview video { max-width: min(900px, 92vw); max-height: 70vh; border-radius: 12px; }
+  #rec-preview .row { display: flex; gap: 12px; }
+  #rec-preview button { font-size: 1rem; padding: 10px 24px; }
+  #rec-preview button.secondary { background: transparent; color: inherit; border: 1px solid #fff4; }
 </style>
 </head>
 <body>

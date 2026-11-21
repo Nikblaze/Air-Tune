@@ -5,7 +5,7 @@ import type { StringEntity } from "../scene/StringEntity";
 import type { CoverTransform } from "../tracking/coords";
 import type { Hand } from "../tracking/pipeline";
 import type { createParticles } from "../core/particles";
-import { drawHands } from "./drawHands";
+import { drawHands, drawPalmRings, type PalmRing } from "./drawHands";
 import { drawParticles } from "./drawParticles";
 import { drawPreview, drawString } from "./drawString";
 
@@ -20,6 +20,7 @@ export interface Frame {
   preview: { a: Vec2; b: Vec2; label: string; ticks: number[]; color: string } | null;
   particles: ReturnType<typeof createParticles>;
   hands: readonly Hand[];
+  palmRings: readonly PalmRing[];
 }
 
 /** One frame, back to front: video -> strings (lighter) -> preview -> particles (lighter) -> hands. */
@@ -38,4 +39,5 @@ export function render(ctx: CanvasRenderingContext2D, f: Frame): void {
   if (f.preview) drawPreview(ctx, f.preview.a, f.preview.b, f.preview.label, f.preview.ticks, f.preview.color);
   drawParticles(ctx, f.particles);
   drawHands(ctx, f.hands);
+  drawPalmRings(ctx, f.palmRings);
 }
