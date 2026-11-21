@@ -1,6 +1,10 @@
 import { createAppState, type AppState } from "./app/appState";
 import { config } from "./config";
-import { drawHands } from "./render/drawHands";
+import { bus } from "./events";
+import { render } from "./render/renderer";
+import { createGestureController } from "./scene/gestureController";
+import { StringManager } from "./scene/StringManager";
+import { initHud } from "./ui/hud";
 import { coverTransform } from "./tracking/coords";
 import { processResult, type Hand } from "./tracking/pipeline";
 import { createDebugPanel } from "./ui/debugPanel";
@@ -71,6 +75,9 @@ async function requestCamera() {
   let detectFps = 0;
   let lastDetect = last;
   let hands: Hand[] = [];
+  const gesture = createGestureController();
+  const manager = new StringManager(bus);
+  initHud({ onUndo: () => manager.undo(performance.now()), onClear: () => manager.clear(performance.now()) });
 
   const frame = (now: number) => {
     renderFps = a * renderFps + (1 - a) * (1000 / Math.max(now - last, 1));
@@ -85,17 +92,10 @@ async function requestCamera() {
       detectFps = a * detectFps + (1 - a) * (1000 / Math.max(now - lastDetect, 1));
       lastDetect = now;
     }
-    ctx.clearRect(0, 0, W, H);
-    // Draw video onto the canvas (cover-crop + mirror) so recordings of the canvas include it.
-    ctx.save();
-    if (config.mirror) {
-      ctx.translate(W, 0);
-      ctx.scale(-1, 1);
-    }
-    // In mirrored space the flip is symmetric about the center, so the same offsets apply.
-    ctx.drawImage(video, t.offsetX, t.offsetY, t.videoW * t.scale, t.videoH * t.scale);
-    ctx.restore();
-    drawHands(ctx, hands);
+    const g = gesture.update(hands, now);
+    if (g.commit) manager.add(g.commit.a, g.commit.b, now);
+    manager.update(now);
+    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), preview: g.preview, hands });
     // MediaPipe labels assume a mirrored (selfie) input; our camera frame is unmirrored, so its
     // "Left" is the hand that ends up on the right side of the mirrored display. Swap for display.
     const display = (l: string) => (l.startsWith("Left") ? "R" : "L");
@@ -103,7 +103,7 @@ async function requestCamera() {
       .map((h) => `${display(h.label)}  ratio ${h.ratio.toFixed(2)}  ${h.pinching ? "PINCH" : "open"}`)
       .join("\n");
     fpsEl.textContent =
-      `render ${renderFps.toFixed(0)} fps\ndetect ${detectFps.toFixed(0)} fps\nhands ${hands.length}` +
+      `render ${renderFps.toFixed(0)} fps\ndetect ${detectFps.toFixed(0)} fps\nhands ${hands.length}\nstate ${g.state}\nstrings ${manager.strings.length}` +
       (handLines ? `\n${handLines}` : "");
     requestAnimationFrame(frame);
   };

@@ -11,11 +11,13 @@ export interface Hand {
   pinching: boolean;
   ratio: number;
   pinchPoint: Vec2 | null;
+  held: boolean; // true = last-known copy of a hand the detector missed this frame
 }
 
 // Read config on every call so debug-panel edits apply live.
 const filters = new HandFilters(() => config.oneEuro);
 const wasPinching = new Map<string, boolean>();
+const lastSeen = new Map<string, { hand: Hand; t: number }>();
 
 /** normalized landmarks -> canvas px -> One Euro -> pinch state. */
 export function processResult(
@@ -36,8 +38,15 @@ export function processResult(
     const ratio = pinchRatio(points);
     const pinching = updatePinch(wasPinching.get(label) ?? false, ratio, config.pinch);
     wasPinching.set(label, pinching);
-    return { label, points, pinching, ratio, pinchPoint: Number.isFinite(ratio) ? pinchPoint(points) : null };
+    return { label, points, pinching, ratio, pinchPoint: Number.isFinite(ratio) ? pinchPoint(points) : null, held: false };
   });
+  for (const h of hands) lastSeen.set(h.label, { hand: h, t: tSeconds });
+  // Hand hold (SPEC §9): re-emit missing hands briefly; only then drop their filter/pinch state.
+  for (const [label, { hand, t }] of lastSeen) {
+    if (seen.has(label)) continue;
+    if ((tSeconds - t) * 1000 <= config.handHoldMs) hands.push({ ...hand, held: true });
+    else lastSeen.delete(label);
+  }
   const present = new Set(hands.map((h) => h.label));
   filters.keepOnly(present);
   for (const k of wasPinching.keys()) if (!present.has(k)) wasPinching.delete(k);

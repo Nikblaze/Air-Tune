@@ -15,5 +15,11 @@ export const config = {
   oneEuro: { minCutoff: 1.0, beta: 0.007, dCutoff: 1.0 },
   // Pinch ratio = thumb-index distance / hand scale. on < off gives hysteresis.
   pinch: { on: 0.3, off: 0.45, ringColor: "#00e5ff", fillColor: "#ffffff", radius: 12 },
+  handHoldMs: 100, // keep a vanished hand this long (SPEC §9) so one missed frame doesn't break a pinch
+  minStringLength: 80, // px; shorter pinches are discarded
+  maxStrings: 12,
+  stringFadeMs: 400,
+  string: { color: "#ffffff", width: 3, anchorRadius: 6 },
+  preview: { color: "#00e5ff", width: 2, anchorRadius: 8, dash: [10, 8] },
   debug: { showSkeleton: true },
 };

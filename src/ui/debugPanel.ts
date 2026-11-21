@@ -13,6 +13,11 @@ export function createDebugPanel(config: typeof Config): GUI {
   euro.add(config.oneEuro, "minCutoff", 0.01, 5, 0.01);
   euro.add(config.oneEuro, "beta", 0, 0.05, 0.0005);
   euro.add(config.oneEuro, "dCutoff", 0.1, 5, 0.1);
+  const strings = gui.addFolder("Strings");
+  strings.add(config, "minStringLength", 20, 300, 1);
+  strings.add(config, "maxStrings", 1, 24, 1);
+  strings.add(config, "stringFadeMs", 0, 2000, 50);
+  strings.add(config, "handHoldMs", 0, 500, 10);
   const debug = gui.addFolder("Debug");
   debug.add(config.debug, "showSkeleton");
   debug.add(config, "mirror");
