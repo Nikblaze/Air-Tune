@@ -27,7 +27,8 @@ export function createFingerTracker() {
           const old = prev.get(key);
           // No old = hand absent last detection. A huge jump = tracker glitch / hand re-acquired
           // elsewhere; a segment through every string would be a phantom strum (SPEC §9).
-          if (!old || dist(old.p, p) > config.maxFingerJumpPx) continue;
+          // A long gap (pause / tab hidden / detector stall) is also stale: old→new is not one motion.
+          if (!old || dist(old.p, p) > config.maxFingerJumpPx || now - old.t > config.maxFingerGapMs) continue;
           const dt = (now - old.t) / 1000;
           if (dt > 0) moves.push({ key, p0: old.p, p1: p, dt });
         }

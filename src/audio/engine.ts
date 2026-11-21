@@ -31,6 +31,7 @@ function createEngine() {
 
   return {
     resume: () => ctx.resume(),
+    suspend: () => ctx.suspend(),
     pluck({ hz, velocity, pan }: { hz: number; velocity: number; pan: number }) {
       // Read live so debug-panel edits apply to the next note.
       master.gain.value = config.audio.volume;

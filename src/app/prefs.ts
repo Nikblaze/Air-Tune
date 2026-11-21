@@ -11,6 +11,10 @@ export interface Prefs {
   showSkeleton: boolean;
   intensity: Intensity;
   instrument: InstrumentId;
+  pitchMode: "scale" | "free";
+  reverb: number;
+  mirror: boolean;
+  cameraId: string;
 }
 
 const KEY = "airStrings.prefs.v1";
@@ -24,6 +28,10 @@ const DEFAULTS: Prefs = {
   showSkeleton: config.debug.showSkeleton,
   intensity: config.visuals.intensity,
   instrument: config.audio.instrument,
+  pitchMode: config.music.pitchMode,
+  reverb: config.audio.reverb,
+  mirror: config.mirror,
+  cameraId: config.cameraId,
 };
 
 // localStorage access itself can throw (blocked storage), so even the default is guarded.
@@ -49,6 +57,10 @@ export function loadPrefs(storage: Pick<Storage, "getItem"> | null = defaultStor
       showSkeleton: typeof raw.showSkeleton === "boolean" ? raw.showSkeleton : DEFAULTS.showSkeleton,
       intensity: INTENSITIES.includes(raw.intensity) ? raw.intensity : DEFAULTS.intensity,
       instrument: Object.hasOwn(INSTRUMENTS, raw.instrument) ? raw.instrument : DEFAULTS.instrument,
+      pitchMode: raw.pitchMode === "scale" || raw.pitchMode === "free" ? raw.pitchMode : DEFAULTS.pitchMode,
+      reverb: Math.min(1, Math.max(0, num(raw.reverb, DEFAULTS.reverb))),
+      mirror: typeof raw.mirror === "boolean" ? raw.mirror : DEFAULTS.mirror,
+      cameraId: typeof raw.cameraId === "string" ? raw.cameraId : DEFAULTS.cameraId,
     };
   } catch {
     return { ...DEFAULTS };
@@ -70,4 +82,8 @@ export function applyPrefs(p: Prefs): void {
   config.debug.showSkeleton = p.showSkeleton;
   config.visuals.intensity = p.intensity;
   config.audio.instrument = p.instrument;
+  config.music.pitchMode = p.pitchMode;
+  config.audio.reverb = p.reverb;
+  config.mirror = p.mirror;
+  config.cameraId = p.cameraId;
 }

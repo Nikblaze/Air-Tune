@@ -16,6 +16,7 @@ export const config = {
   camera: { width: 1280, height: 720 },
   skeleton: { bones: "#00ff66", joints: "#ff3344", boneWidth: 3, jointRadius: 4 },
   fpsSmoothing: 0.9, // EMA weight on the old value
+  cameraId: "", // saved deviceId; "" = browser default
   mirror: true, // selfie view: flip x so the on-screen hand moves like a mirror
   // One Euro (Casiez 2012). beta is per px/s because we filter in canvas pixels.
   oneEuro: { minCutoff: 1.0, beta: 0.007, dCutoff: 1.0 },
@@ -53,6 +54,7 @@ export const config = {
   pluckMaxVelocity: 3000, // px/s that maps to velocity 1
   pluckMinVelocity: 0.15, // floor so gentle touches still sound
   maxFingerJumpPx: 400, // bigger per-detection jump = tracking glitch, not a strum (SPEC §9)
+  maxFingerGapMs: 200, // older previous fingertip = no swept segment (3+ missed detections)
   audio: {
     volume: 0.8,
     reverb: 0.3,
@@ -63,6 +65,7 @@ export const config = {
     karplusGain: 0.35, // worklet voices peak near 1 and sum; leave headroom for the compressor
   },
   hints: { noHandsMs: 3000, tooCloseFrac: 0.3, darkLuma: 45 },
+  idle: { noHandsMs: 60000 }, // no hands this long while PLAYING -> camera off + Resume overlay (SPEC §10.8)
   tutorial: { hintAfterMs: 10000, doneShowMs: 1200 },
   debug: { showSkeleton: true },
 };

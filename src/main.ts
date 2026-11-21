@@ -9,6 +9,7 @@ import { bus } from "./events";
 import { render } from "./render/renderer";
 import { createGestureController } from "./scene/gestureController";
 import { StringManager } from "./scene/StringManager";
+import { createHelp } from "./ui/help";
 import { createHints } from "./ui/hints";
 import { initHud } from "./ui/hud";
 import { createSettingsDrawer } from "./ui/settingsDrawer";
@@ -17,7 +18,7 @@ import { createFingerTracker } from "./tracking/fingerTracker";
 import { coverTransform } from "./tracking/coords";
 import { processResult, type Hand } from "./tracking/pipeline";
 import { createDebugPanel } from "./ui/debugPanel";
-import { classifyCameraError, startCamera } from "./tracking/camera";
+import { classifyCameraError, startCamera, stopCamera } from "./tracking/camera";
 import { detect, preloadHandTracker } from "./tracking/handTracker";
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector<T>(sel)!;
@@ -30,6 +31,7 @@ const sectionFor: Record<AppState, string> = {
   LOADING_MODEL: "loading",
   TUTORIAL: "stage", // same canvas as PLAYING: drawing and plucking work during the tutorial
   PLAYING: "stage",
+  PAUSED: "stage", // canvas stays as the backdrop; the Resume overlay (idle case) sits on top
 };
 
 const prefs = loadPrefs();
@@ -57,9 +59,68 @@ landmarkerPromise.catch((err) => {
   progress.hidden = true;
 });
 
+let stream: MediaStream | null = null;
+let pauseReason: "hidden" | "idle" | null = null;
+const resumeEl = $("#resume");
+const resumeText = $("#resume-text");
+const resumeBtn = $<HTMLButtonElement>("#resume-btn");
+
+// PAUSED: the rAF loop keeps ticking but skips all work; strings, particles and prefs live on untouched.
+function pause(reason: "hidden" | "idle") {
+  const before = app.get();
+  app.send("pause");
+  if (app.get() === before) return;
+  pauseReason = reason;
+  void getAudio().suspend();
+  if (reason === "idle") {
+    stopCamera(stream); // camera light off
+    stream = null;
+    video.srcObject = null;
+    resumeText.textContent = "Paused — camera off to save power";
+    resumeEl.hidden = false;
+  }
+}
+
+// Visibility pause only applies in PLAYING (the tutorial is short and needs the camera to stay on).
+// Auto-resume only for "hidden": an idle pause waits for the Resume click because the camera is off.
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) pause("hidden");
+  else if (app.get() === "PAUSED" && pauseReason === "hidden") {
+    pauseReason = null;
+    app.send("resume");
+    void getAudio().resume();
+  }
+});
+
+resumeBtn.addEventListener("click", async () => {
+  void getAudio().resume(); // synchronous inside the click (autoplay rules)
+  resumeBtn.disabled = true;
+  try {
+    stream = await startCamera(video, config.cameraId); // permission already granted: no prompt
+  } catch (err) {
+    console.warn("Camera restart failed", err);
+    resumeText.textContent = "Could not restart the camera. Check it is connected, then try again.";
+    return;
+  } finally {
+    resumeBtn.disabled = false;
+  }
+  resumeEl.hidden = true;
+  pauseReason = null;
+  app.send("resume");
+});
+
+async function switchCamera() {
+  stopCamera(stream); // old tracks first, or some browsers refuse to open a second camera
+  try {
+    stream = await startCamera(video, config.cameraId);
+  } catch (err) {
+    console.warn("Camera switch failed", err);
+  }
+}
+
 async function requestCamera() {
   try {
-    await startCamera(video);
+    stream = await startCamera(video, config.cameraId);
   } catch (err) {
     app.send(classifyCameraError(err));
     return;
@@ -105,6 +166,12 @@ async function requestCamera() {
     onUndo: () => manager.undo(performance.now()),
     onClear: () => manager.clear(performance.now()),
     onSettings: () => drawer.open(),
+    onHelp: () => app.get() === "PLAYING" && help.toggle(),
+  });
+  const help = createHelp();
+  // One Esc handler: close the topmost overlay (help sits above the drawer).
+  window.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") help.isOpen() ? help.close() : drawer.close();
   });
   const drawer = createSettingsDrawer({
     onChange() {
@@ -115,9 +182,14 @@ async function requestCamera() {
         showSkeleton: config.debug.showSkeleton,
         intensity: config.visuals.intensity,
         instrument: config.audio.instrument,
+        pitchMode: config.music.pitchMode,
+        reverb: config.audio.reverb,
+        mirror: config.mirror,
+        cameraId: config.cameraId,
       });
       savePrefs(prefs);
     },
+    onCamera: () => void switchCamera(),
   });
 
   // Built per call so debug-panel edits and window resizes apply immediately.
@@ -152,7 +224,15 @@ async function requestCamera() {
     );
   });
 
+  let noHandsSince: number | null = null;
   const frame = (now: number) => {
+    if (app.get() === "PAUSED") {
+      last = now; // no huge dt on resume
+      hands = []; // stale hands would fake a pinch/pluck on the first frame back
+      noHandsSince = null;
+      requestAnimationFrame(frame);
+      return;
+    }
     renderFps = a * renderFps + (1 - a) * (1000 / Math.max(now - last, 1));
     const dt = Math.min(config.visuals.maxDtSec, (now - last) / 1000);
     last = now;
@@ -174,6 +254,11 @@ async function requestCamera() {
       const midi = lengthToMidi(dist(g.commit.a, g.commit.b), opts);
       manager.add(g.commit.a, g.commit.b, now, { midi, hz: midiToHz(midi) });
     }
+    // Idle: no live hands for a long time while PLAYING -> free the camera.
+    if (app.get() === "PLAYING" && hands.every((h) => h.held)) {
+      noHandsSince ??= now;
+      if (now - noHandsSince >= config.idle.noHandsMs) pause("idle");
+    } else noHandsSince = null;
     manager.update(now);
     particles.update(dt);
     tutorial?.update(hands, g.state, now); // after manager.add so a commit's stringCreated is seen this frame

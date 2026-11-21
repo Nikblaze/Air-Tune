@@ -26,6 +26,15 @@ describe("appState", () => {
     expect(run(["start", "noDevice"])).toBe("NO_CAMERA");
     expect(run(["start", "noDevice", "retry"])).toBe("REQUESTING_CAMERA");
   });
+  it("PLAYING <-> PAUSED", () => {
+    expect(transition("PLAYING", "pause")).toBe("PAUSED");
+    expect(transition("PAUSED", "resume")).toBe("PLAYING");
+  });
+  it("pause/resume are no-ops elsewhere", () => {
+    expect(transition("TUTORIAL", "pause")).toBe("TUTORIAL");
+    expect(transition("PLAYING", "resume")).toBe("PLAYING");
+    expect(transition("PAUSED", "pause")).toBe("PAUSED");
+  });
   it("invalid event is a no-op", () => {
     expect(transition("LANDING", "modelReady")).toBe("LANDING");
     const changes: string[] = [];

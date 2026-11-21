@@ -1,5 +1,5 @@
 // Pure screen state machine (SPEC §10.1). No DOM.
-// PAUSED / RECORDING etc. arrive in later phases.
+// RECORDING etc. arrive in later phases.
 export type AppState =
   | "LANDING"
   | "REQUESTING_CAMERA"
@@ -7,9 +7,10 @@ export type AppState =
   | "NO_CAMERA"
   | "LOADING_MODEL"
   | "TUTORIAL"
-  | "PLAYING";
+  | "PLAYING"
+  | "PAUSED";
 
-export type AppEvent = "start" | "granted" | "denied" | "noDevice" | "retry" | "modelReady" | "modelReadyReturning" | "tutorialDone";
+export type AppEvent = "start" | "granted" | "denied" | "noDevice" | "retry" | "modelReady" | "modelReadyReturning" | "tutorialDone" | "pause" | "resume";
 
 const table: Record<AppState, Partial<Record<AppEvent, AppState>>> = {
   LANDING: { start: "REQUESTING_CAMERA" },
@@ -19,7 +20,8 @@ const table: Record<AppState, Partial<Record<AppEvent, AppState>>> = {
   // First-time users get the tutorial; returning users (prefs.tutorialDone) skip it.
   LOADING_MODEL: { modelReady: "TUTORIAL", modelReadyReturning: "PLAYING" },
   TUTORIAL: { tutorialDone: "PLAYING" }, // finishing and Skip are the same event
-  PLAYING: {},
+  PLAYING: { pause: "PAUSED" },
+  PAUSED: { resume: "PLAYING" },
 };
 
 /** Invalid events leave the state unchanged. */

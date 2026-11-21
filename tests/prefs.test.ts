@@ -29,12 +29,12 @@ describe("prefs", () => {
     expect(() => savePrefs(defaults, throwing)).not.toThrow();
   });
   it("partial / invalid fields are merged with defaults", () => {
-    const p = loadPrefs(fake(JSON.stringify({ tutorialDone: true, scale: "bogus", volume: 7, intensity: "ultra", instrument: "toString" })));
-    expect(p).toEqual({ ...defaults, tutorialDone: true, volume: 1 });
+    const p = loadPrefs(fake(JSON.stringify({ tutorialDone: true, scale: "bogus", volume: 7, intensity: "ultra", instrument: "toString", pitchMode: "wild", reverb: -3, mirror: "yes", cameraId: 5 })));
+    expect(p).toEqual({ ...defaults, tutorialDone: true, volume: 1, reverb: 0 });
   });
   it("round-trips", () => {
     const s = fake();
-    const p = { ...defaults, tutorialDone: true, scale: "yaman" as const, rootMidi: 60, volume: 0.3, showSkeleton: false, intensity: "high" as const, instrument: "sitar" as const };
+    const p = { ...defaults, tutorialDone: true, scale: "yaman" as const, rootMidi: 60, volume: 0.3, showSkeleton: false, intensity: "high" as const, instrument: "sitar" as const, pitchMode: "free" as const, reverb: 0.6, mirror: false, cameraId: "abc" };
     savePrefs(p, s);
     expect(loadPrefs(s)).toEqual(p);
   });
