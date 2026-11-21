@@ -10,7 +10,7 @@ function setup() {
   const removed: number[] = [];
   bus.on("stringCreated", (e) => created.push(e.string.id));
   bus.on("stringRemoved", (e) => removed.push(e.stringId));
-  return { m: new StringManager(bus), created, removed };
+  return { m: new StringManager(bus), bus, created, removed };
 }
 
 describe("StringManager", () => {
@@ -71,5 +71,59 @@ describe("StringManager", () => {
     m.clear(5);
     expect(a.fadeStart).toBe(5);
     expect(b.fadeStart).toBe(2);
+  });
+
+  describe("detectPlucks", () => {
+    // String along y=0 from x=0..100; finger crosses it at x=50.
+    const swipe = (dt = 0.033) => [{ key: "L:8", p0: { x: 50, y: -10 }, p1: { x: 50, y: 10 }, dt }];
+    function plucks() {
+      const { m, bus } = setup();
+      const got: { stringId: number; velocity: number }[] = [];
+      bus.on("stringPlucked", (e) => got.push(e));
+      return { m, got };
+    }
+
+    it("a crossing emits once and sets lastPluck", () => {
+      const { m, got } = plucks();
+      const s = m.add(P(0), P(100), 0);
+      m.detectPlucks(swipe(), 1000);
+      expect(got).toHaveLength(1);
+      expect(got[0].stringId).toBe(s.id);
+      expect(s.lastPluck).toEqual({ at: 1000, velocity: got[0].velocity });
+    });
+
+    it("cooldown blocks a repeat within pluckCooldownMs and allows it after", () => {
+      const { m, got } = plucks();
+      m.add(P(0), P(100), 0);
+      m.detectPlucks(swipe(), 1000);
+      m.detectPlucks(swipe(), 1000 + config.pluckCooldownMs - 1);
+      expect(got).toHaveLength(1);
+      m.detectPlucks(swipe(), 1000 + config.pluckCooldownMs);
+      expect(got).toHaveLength(2);
+    });
+
+    it("different fingers have independent cooldowns", () => {
+      const { m, got } = plucks();
+      m.add(P(0), P(100), 0);
+      m.detectPlucks([...swipe(), { ...swipe()[0], key: "L:12" }], 1000);
+      expect(got).toHaveLength(2);
+    });
+
+    it("ignores fading strings", () => {
+      const { m, got } = plucks();
+      m.add(P(0), P(100), 0);
+      m.undo(10);
+      m.detectPlucks(swipe(), 1000);
+      expect(got).toHaveLength(0);
+    });
+
+    it("velocity is normalised, floored and clamped", () => {
+      const { m, got } = plucks();
+      m.add(P(0), P(100), 0);
+      m.detectPlucks(swipe(100), 1000); // 0.2 px/s -> floor
+      expect(got[0].velocity).toBe(config.pluckMinVelocity);
+      m.detectPlucks(swipe(0.001), 2000); // 20000 px/s -> clamp
+      expect(got[1].velocity).toBe(1);
+    });
   });
 });

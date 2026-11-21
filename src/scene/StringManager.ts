@@ -1,17 +1,27 @@
 import { config } from "../config";
-import type { Vec2 } from "../core/vec2";
+import { segmentIntersect } from "../core/intersect";
+import { dist, type Vec2 } from "../core/vec2";
 import type { Bus } from "../events";
 import type { StringEntity } from "./StringEntity";
 
 /** Owns the scene's strings: creation, FIFO cap, fade-out removal. Pure (time is passed in). */
+export interface FingerMove {
+  key: string; // identifies hand+finger, e.g. "Left:8"
+  p0: Vec2;
+  p1: Vec2;
+  dt: number; // seconds between p0 and p1
+}
+
 export class StringManager {
   strings: StringEntity[] = [];
   private nextId = 1;
+  private lastHit = new Map<string, number>(); // `${stringId}|${fingerKey}` -> ms
 
   constructor(private bus: Bus) {}
 
-  add(a: Vec2, b: Vec2, now: number): StringEntity {
-    const s: StringEntity = { id: this.nextId++, a, b, createdAt: now, fadeStart: null };
+  /** `pitch` is computed by the caller so this class stays free of canvas-size/scale knowledge. */
+  add(a: Vec2, b: Vec2, now: number, pitch = { midi: 0, hz: 0 }): StringEntity {
+    const s: StringEntity = { id: this.nextId++, a, b, createdAt: now, fadeStart: null, ...pitch, lastPluck: null };
     this.strings.push(s);
     this.bus.emit("stringCreated", { string: s });
     // Over the cap: fade the oldest live string instead of erroring (SPEC §10.5).
@@ -25,9 +35,31 @@ export class StringManager {
   update(now: number): void {
     this.strings = this.strings.filter((s) => {
       const done = s.fadeStart !== null && now - s.fadeStart >= config.stringFadeMs;
-      if (done) this.bus.emit("stringRemoved", { stringId: s.id });
+      if (done) {
+        this.bus.emit("stringRemoved", { stringId: s.id });
+        for (const k of this.lastHit.keys()) if (k.startsWith(`${s.id}|`)) this.lastHit.delete(k);
+      }
       return !done;
     });
+  }
+
+  /** Swept test of each finger move against each live string (SPEC §3.2). One pluck per cooldown window. */
+  detectPlucks(fingers: readonly FingerMove[], now: number): void {
+    for (const s of this.strings) {
+      if (s.fadeStart !== null) continue;
+      for (const f of fingers) {
+        const hit = segmentIntersect(f.p0, f.p1, s.a, s.b);
+        if (!hit) continue;
+        const k = `${s.id}|${f.key}`;
+        const prev = this.lastHit.get(k);
+        if (prev !== undefined && now - prev < config.pluckCooldownMs) continue;
+        this.lastHit.set(k, now);
+        const speed = dist(f.p0, f.p1) / f.dt; // px/s
+        const velocity = Math.min(1, Math.max(config.pluckMinVelocity, speed / config.pluckMaxVelocity));
+        s.lastPluck = { at: now, velocity };
+        this.bus.emit("stringPlucked", { stringId: s.id, t: hit.t, velocity, direction: hit.direction });
+      }
+    }
   }
 
   undo(now: number): void {

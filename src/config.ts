@@ -1,4 +1,6 @@
 // All tunable numbers live here (no magic numbers in logic files).
+import type { ScaleId } from "./core/music";
+
 export const config = {
   wasmBaseUrl: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm",
   modelUrl:
@@ -21,5 +23,20 @@ export const config = {
   stringFadeMs: 400,
   string: { color: "#ffffff", width: 3, anchorRadius: 6 },
   preview: { color: "#00e5ff", width: 2, anchorRadius: 8, dash: [10, 8] },
+  music: {
+    scale: "majorPentatonic" as ScaleId,
+    rootMidi: 48, // C3
+    pitchMode: "scale" as "scale" | "free",
+    refLengthFrac: 0.6, // refLength = this x canvas width; a string that long plays the root
+    minSemis: -12,
+    maxSemis: 18, // 2.5 octaves
+  },
+  pluckCooldownMs: 120, // per (string, finger): one swipe = one pluck
+  pluckFlashMs: 150, // brighter string after a pluck (Phase 4 replaces with real vibration)
+  pluckMaxVelocity: 3000, // px/s that maps to velocity 1
+  pluckMinVelocity: 0.15, // floor so gentle touches still sound
+  maxFingerJumpPx: 400, // bigger per-detection jump = tracking glitch, not a strum (SPEC §9)
+  audio: { volume: 0.8, reverb: 0.3, reverbSeconds: 2, voiceGain: 0.5, decaySeconds: 1.6 },
+  hints: { noHandsMs: 3000, tooCloseFrac: 0.3, darkLuma: 45 },
   debug: { showSkeleton: true },
 };

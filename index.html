@@ -16,6 +16,12 @@
   #stage video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   #fps { position: fixed; top: 8px; left: 8px; font: 12px monospace; color: #0f6; white-space: pre; pointer-events: none; }
+  #hud { position: fixed; top: 12px; right: 12px; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; background: rgba(0,0,0,.55); font-size: 14px; opacity: 0; transition: opacity .3s; }
+  #hud.show, #hud:hover, #hud:focus-within { opacity: 1; }
+  #hud[hidden] { display: none; }
+  #hud button { font-size: 16px; padding: 2px 10px; background: transparent; color: inherit; border: 1px solid #fff4; }
+  #hint { position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%); padding: 8px 18px; border-radius: 999px; background: rgba(0,0,0,.65); pointer-events: none; }
+  #hint[hidden] { display: none; }
 </style>
 </head>
 <body>

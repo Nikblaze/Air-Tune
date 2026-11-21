@@ -1,5 +1,6 @@
 import GUI from "lil-gui";
 import type { config as Config } from "../config";
+import { SCALES } from "../core/music";
 
 /** Live tuning panel. Hidden by default; press D to toggle. */
 export function createDebugPanel(config: typeof Config): GUI {
@@ -18,6 +19,18 @@ export function createDebugPanel(config: typeof Config): GUI {
   strings.add(config, "maxStrings", 1, 24, 1);
   strings.add(config, "stringFadeMs", 0, 2000, 50);
   strings.add(config, "handHoldMs", 0, 500, 10);
+  const music = gui.addFolder("Music");
+  music.add(config.music, "scale", Object.keys(SCALES));
+  music.add(config.music, "rootMidi", 24, 72, 1);
+  music.add(config.music, "pitchMode", ["scale", "free"]);
+  music.add(config.music, "refLengthFrac", 0.2, 1.2, 0.01);
+  const audio = gui.addFolder("Audio");
+  audio.add(config.audio, "volume", 0, 1, 0.01);
+  audio.add(config.audio, "reverb", 0, 1, 0.01);
+  const pluck = gui.addFolder("Pluck");
+  pluck.add(config, "pluckCooldownMs", 0, 500, 10);
+  pluck.add(config, "pluckMaxVelocity", 500, 6000, 100);
+  pluck.add(config, "maxFingerJumpPx", 100, 1000, 10);
   const debug = gui.addFolder("Debug");
   debug.add(config.debug, "showSkeleton");
   debug.add(config, "mirror");

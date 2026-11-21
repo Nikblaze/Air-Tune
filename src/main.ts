@@ -1,10 +1,15 @@
 import { createAppState, type AppState } from "./app/appState";
 import { config } from "./config";
+import { getAudio } from "./audio/engine";
+import { lengthToMidi, midiToHz, noteName, SCALES, tickFractions, type MusicOpts } from "./core/music";
+import { dist } from "./core/vec2";
 import { bus } from "./events";
 import { render } from "./render/renderer";
 import { createGestureController } from "./scene/gestureController";
 import { StringManager } from "./scene/StringManager";
+import { createHints } from "./ui/hints";
 import { initHud } from "./ui/hud";
+import { createFingerTracker } from "./tracking/fingerTracker";
 import { coverTransform } from "./tracking/coords";
 import { processResult, type Hand } from "./tracking/pipeline";
 import { createDebugPanel } from "./ui/debugPanel";
@@ -77,7 +82,27 @@ async function requestCamera() {
   let hands: Hand[] = [];
   const gesture = createGestureController();
   const manager = new StringManager(bus);
-  initHud({ onUndo: () => manager.undo(performance.now()), onClear: () => manager.clear(performance.now()) });
+  const fingers = createFingerTracker();
+  const hints = createHints();
+  const hud = initHud({ onUndo: () => manager.undo(performance.now()), onClear: () => manager.clear(performance.now()) });
+
+  // Built per call so debug-panel edits and window resizes apply immediately.
+  const musicOpts = (): MusicOpts => ({
+    refLength: config.music.refLengthFrac * window.innerWidth,
+    rootMidi: config.music.rootMidi,
+    scale: config.music.pitchMode === "scale" ? SCALES[config.music.scale].steps : null,
+    minSemis: config.music.minSemis,
+    maxSemis: config.music.maxSemis,
+  });
+
+  // Audio is event-driven: the pluck event carries everything the voice needs.
+  bus.on("stringPlucked", (e) => {
+    const s = manager.strings.find((x) => x.id === e.stringId);
+    if (!s) return;
+    const W = window.innerWidth;
+    const pan = ((s.a.x + s.b.x) / 2 / W) * 1.6 - 0.8; // [0,W] -> [-0.8,0.8]
+    getAudio().pluck({ hz: s.hz, velocity: e.velocity, pan });
+  });
 
   const frame = (now: number) => {
     renderFps = a * renderFps + (1 - a) * (1000 / Math.max(now - last, 1));
@@ -91,11 +116,27 @@ async function requestCamera() {
       hands = processResult(r, t, W, now / 1000); // keep last hands between detections
       detectFps = a * detectFps + (1 - a) * (1000 / Math.max(now - lastDetect, 1));
       lastDetect = now;
+      // Once per NEW detection: p0->p1 must span exactly one detection, not one render frame.
+      manager.detectPlucks(fingers.update(hands, now), now);
     }
     const g = gesture.update(hands, now);
-    if (g.commit) manager.add(g.commit.a, g.commit.b, now);
+    const opts = musicOpts();
+    if (g.commit) {
+      const midi = lengthToMidi(dist(g.commit.a, g.commit.b), opts);
+      manager.add(g.commit.a, g.commit.b, now, { midi, hz: midiToHz(midi) });
+    }
     manager.update(now);
-    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), preview: g.preview, hands });
+    const len = g.preview ? dist(g.preview.a, g.preview.b) : 0;
+    const preview = g.preview && {
+      ...g.preview,
+      label: noteName(lengthToMidi(len, opts)),
+      ticks: tickFractions(len, opts),
+    };
+    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), now, preview, hands });
+    hints.update({ hands, now, video });
+    hud.setLabel(
+      config.music.pitchMode === "free" ? "Free pitch" : `${noteName(config.music.rootMidi)} \u00b7 ${SCALES[config.music.scale].name}`,
+    );
     // MediaPipe labels assume a mirrored (selfie) input; our camera frame is unmirrored, so its
     // "Left" is the hand that ends up on the right side of the mirrored display. Swap for display.
     const display = (l: string) => (l.startsWith("Left") ? "R" : "L");
@@ -113,6 +154,8 @@ async function requestCamera() {
 // Only act when the click actually moved the state machine: a double-click
 // would otherwise start two camera requests and two rAF loops.
 const go = (event: "start" | "retry") => () => {
+  // Must run synchronously inside the click, before any await (autoplay rules). Idempotent.
+  void getAudio().resume();
   const before = app.get();
   app.send(event);
   if (app.get() !== before) void requestCamera();

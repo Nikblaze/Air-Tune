@@ -1,8 +1,9 @@
 import { config } from "../config";
+import { noteName } from "../core/music";
+import type { Vec2 } from "../core/vec2";
 import type { StringEntity } from "../scene/StringEntity";
 import type { CoverTransform } from "../tracking/coords";
 import type { Hand } from "../tracking/pipeline";
-import type { Segment } from "../scene/gestureController";
 import { drawHands } from "./drawHands";
 import { drawPreview, drawString } from "./drawString";
 
@@ -13,7 +14,8 @@ export interface Frame {
   H: number;
   strings: readonly StringEntity[];
   alphaOf: (s: StringEntity) => number;
-  preview: Segment | null;
+  now: number; // ms
+  preview: { a: Vec2; b: Vec2; label: string; ticks: number[] } | null;
   hands: readonly Hand[];
 }
 
@@ -29,7 +31,7 @@ export function render(ctx: CanvasRenderingContext2D, f: Frame): void {
   // In mirrored space the flip is symmetric about the center, so the same offsets apply.
   ctx.drawImage(f.video, f.t.offsetX, f.t.offsetY, f.t.videoW * f.t.scale, f.t.videoH * f.t.scale);
   ctx.restore();
-  for (const s of f.strings) drawString(ctx, s, f.alphaOf(s));
-  if (f.preview) drawPreview(ctx, f.preview.a, f.preview.b);
+  for (const s of f.strings) drawString(ctx, s, f.alphaOf(s), f.now, noteName(s.midi));
+  if (f.preview) drawPreview(ctx, f.preview.a, f.preview.b, f.preview.label, f.preview.ticks);
   drawHands(ctx, f.hands);
 }
