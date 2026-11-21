@@ -1,0 +1,35 @@
+{
+  "name": "air-tune",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Nikblaze/Air-Tune.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Nikblaze/Air-Tune/issues"
+  },
+  "homepage": "https://github.com/Nikblaze/Air-Tune#readme",
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.3"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
+  }
+}

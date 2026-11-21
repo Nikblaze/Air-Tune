@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Air Strings</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #07070c; color: #e8e8f0; font-family: system-ui, sans-serif; }
+  section { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 24px; }
+  section[hidden] { display: none; }
+  button { font: inherit; font-size: 1.25rem; padding: 14px 36px; border: 0; border-radius: 999px; background: #00ff66; color: #021; cursor: pointer; }
+  small, .note { opacity: .6; }
+  .note { display: none; }
+  @media (max-width: 700px) { .note { display: block; } }
+  #stage video, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  #fps { position: fixed; top: 8px; left: 8px; font: 12px monospace; color: #0f6; white-space: pre; pointer-events: none; }
+</style>
+</head>
+<body>
+<section id="landing">
+  <h1>Air Strings</h1>
+  <p>Draw strings in the air. Play them with your hands.</p>
+  <button id="start">Start playing</button>
+  <small>Video stays on your device. Nothing is uploaded.</small>
+  <small class="note">Best on a laptop</small>
+</section>
+<section id="requesting" hidden><p>Allow camera access…</p></section>
+<section id="denied" hidden>
+  <p>Camera access was blocked.</p>
+  <p>Click the camera icon in the address bar, allow access, then retry.</p>
+  <button class="retry">Retry</button>
+</section>
+<section id="no-camera" hidden>
+  <p>No camera found.</p>
+  <p>Connect a camera, then retry.</p>
+  <button class="retry">Retry</button>
+</section>
+<section id="loading" hidden>
+  <p id="loading-text">Loading hand tracking…</p>
+  <progress id="progress" max="1"></progress>
+</section>
+<section id="stage" hidden>
+  <video playsinline muted></video>
+  <canvas></canvas>
+  <div id="fps"></div>
+</section>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
