@@ -39,3 +39,17 @@ export function energy(tSec: number, coeffs: Float64Array, gamma: number): numbe
   }
   return e;
 }
+
+/**
+ * Swing envelope at x: the furthest the string can reach right now, Σ |A_n sin(nπx)| e^(−γ_n t).
+ * A real camera sees a vibrating string as a blurred "lens" between ±envelope; drawing it
+ * gives that look without rendering many sub-frames. Always ≥ |displacement(x, t)|.
+ */
+export function envelope(x: number, tSec: number, coeffs: Float64Array, gamma: number): number {
+  let e = 0;
+  for (let i = 0; i < coeffs.length; i++) {
+    const n = i + 1;
+    e += Math.abs(coeffs[i] * Math.sin(n * Math.PI * x)) * Math.exp(-gamma * n * tSec);
+  }
+  return e;
+}

@@ -21,14 +21,16 @@ export class StringManager {
   constructor(private bus: Bus) {}
 
   /** `pitch` is computed by the caller so this class stays free of canvas-size/scale knowledge. */
-  add(a: Vec2, b: Vec2, now: number, pitch = { midi: 0, hz: 0 }): StringEntity {
+  add(a: Vec2, b: Vec2, now: number, pitch: { midi: number; hz: number; ticks?: number[] } = { midi: 0, hz: 0 }): StringEntity {
     const s: StringEntity = {
       id: this.nextId++,
       a,
       b,
       createdAt: now,
       fadeStart: null,
-      ...pitch,
+      midi: pitch.midi,
+      hz: pitch.hz,
+      ticks: pitch.ticks ?? [],
       lastPluck: null,
       coeffs: new Float64Array(config.vibration.modes),
       omega1: 0,

@@ -21,7 +21,7 @@ export function createParticles(capacity: number, opts: ParticleOpts) {
   let count = 0;
 
   return {
-    x, y, life, maxLife, hue,
+    x, y, vx, vy, life, maxLife, hue,
     get count() {
       return count;
     },

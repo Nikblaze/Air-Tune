@@ -27,8 +27,8 @@ export const config = {
   minDrawMs: 200, // a two-hand pinch held shorter than this is tracking noise, not a draw
   maxStrings: 12,
   stringFadeMs: 400,
-  string: { color: "#ffffff", width: 4, anchorRadius: 7 },
-  preview: { color: "#00e5ff", width: 2, anchorRadius: 8, dash: [10, 8] },
+  string: { color: "#ffffff", width: 2, anchorRadius: 4, tickLength: 5 },
+  preview: { color: "#ffffff", width: 2, anchorRadius: 8, dash: [10, 8] },
   music: {
     scale: "majorPentatonic" as ScaleId,
     rootMidi: 48, // C3
@@ -42,10 +42,8 @@ export const config = {
   vibration: { modes: 6, samples: 48, damping: 2.5, maxAmplitudePx: 26, freqBase: 6, freqRange: 10, restEnergy: 0.002 },
   // Effect intensity (SPEC §10.6): glow passes, blur on the wide pass (px), particle count multiplier.
   visuals: {
-    // Additive glow on a bright (daylight) video saturates to white and the hues vanish:
-    // dim the video a little and put a dark underlay beneath each string for contrast.
-    videoDim: 0.35, // 0..1 black overlay on the camera image
-    underlay: 0.55, // 0..1 alpha of the dark line drawn under each string
+    // A light dim keeps the additive glow from washing out to white on a bright (daylight) video.
+    videoDim: 0.15, // 0..1 black overlay on the camera image
     intensity: "medium" as Intensity,
     levels: {
       low: { passes: 1, blur: 0, particles: 0.4 },
@@ -54,7 +52,7 @@ export const config = {
     } satisfies Record<Intensity, { passes: number; blur: number; particles: number }>,
     maxDtSec: 0.05, // clamp physics dt so a tab switch doesn't explode particles
   },
-  particles: { pool: 1200, minCount: 40, maxCount: 80, speed: 700, spread: 0.7, gravity: 400, lifeMin: 0.5, lifeMax: 1.1, radius: 3.5 },
+  particles: { pool: 1200, minCount: 40, maxCount: 80, speed: 700, spread: 0.7, gravity: 400, lifeMin: 0.5, lifeMax: 1.1, radius: 3.5, streak: 0.03 }, // streak: spark tail length in seconds of travel
   pluckCooldownMs: 120, // per (string, finger): one swipe = one pluck
   pluckMaxVelocity: 3000, // px/s that maps to velocity 1
   pluckMinVelocity: 0.15, // floor so gentle touches still sound

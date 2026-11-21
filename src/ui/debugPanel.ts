@@ -37,7 +37,6 @@ export function createDebugPanel(config: typeof Config): GUI {
   const visuals = gui.addFolder("Visuals");
   visuals.add(config.visuals, "intensity", [...INTENSITIES]);
   visuals.add(config.visuals, "videoDim", 0, 0.9, 0.05);
-  visuals.add(config.visuals, "underlay", 0, 1, 0.05);
   visuals.add(config.vibration, "damping", 0.5, 8, 0.1);
   visuals.add(config.vibration, "maxAmplitudePx", 5, 80, 1);
   visuals.add(config.vibration, "freqBase", 1, 20, 0.5);

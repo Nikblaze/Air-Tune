@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { displacement, energy, pluckCoefficients } from "../src/core/stringModes";
+import { displacement, energy, envelope, pluckCoefficients } from "../src/core/stringModes";
 
 const coeffs = (p: number, h: number, N: number) => {
   const c = new Float64Array(N);
@@ -47,5 +47,20 @@ describe("stringModes", () => {
     };
     const t = 0.5;
     expect(energy(t, only(4), 2.5)).toBeLessThan(energy(t, only(1), 2.5));
+  });
+});
+
+describe("envelope", () => {
+  it("bounds |displacement| everywhere and is 0 at the fixed ends", () => {
+    const c = new Float64Array(6);
+    pluckCoefficients(0.3, 20, 6, c);
+    for (const t of [0, 0.05, 0.3]) {
+      for (let i = 0; i <= 20; i++) {
+        const x = i / 20;
+        expect(envelope(x, t, c, 2.5)).toBeGreaterThanOrEqual(Math.abs(displacement(x, t, c, 40, 2.5)) - 1e-9);
+      }
+      expect(envelope(0, t, c, 2.5)).toBeCloseTo(0);
+      expect(envelope(1, t, c, 2.5)).toBeCloseTo(0);
+    }
   });
 });

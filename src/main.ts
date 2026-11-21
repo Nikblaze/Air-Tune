@@ -242,7 +242,7 @@ async function requestCamera() {
     const opts = musicOpts();
     for (const s of denormalizeLayout(saved, window.innerWidth, window.innerHeight)) {
       const midi = lengthToMidi(dist(s.a, s.b), opts);
-      manager.add(s.a, s.b, now, { midi, hz: midiToHz(midi) });
+      manager.add(s.a, s.b, now, { midi, hz: midiToHz(midi), ticks: tickFractions(dist(s.a, s.b), opts) });
     }
   };
   if (app.get() === "PLAYING") restore();
@@ -298,7 +298,7 @@ async function requestCamera() {
     const opts = musicOpts();
     if (g.commit) {
       const midi = lengthToMidi(dist(g.commit.a, g.commit.b), opts);
-      manager.add(g.commit.a, g.commit.b, now, { midi, hz: midiToHz(midi) });
+      manager.add(g.commit.a, g.commit.b, now, { midi, hz: midiToHz(midi), ticks: tickFractions(dist(g.commit.a, g.commit.b), opts) });
     }
     // Idle: no live hands for a long time while PLAYING -> free the camera.
     if (app.get() === "PLAYING" && hands.every((h) => h.held)) {
