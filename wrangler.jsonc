@@ -1,6 +1,11 @@
 {
   "name": "air-strings",
   "compatibility_date": "2026-11-21",
+  // Wrangler runs this before every `wrangler deploy`, so ./dist exists even when the
+  // CI only runs `npx wrangler deploy` (Cloudflare Workers Builds' default deploy command).
+  "build": {
+    "command": "npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
