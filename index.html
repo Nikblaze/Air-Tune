@@ -12,7 +12,9 @@
   small, .note { opacity: .6; }
   .note { display: none; }
   @media (max-width: 700px) { .note { display: block; } }
-  #stage video, #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); }
+  /* video is only a source for drawImage; keep it laid out (not display:none) so play() is reliable */
+  #stage video { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
   #fps { position: fixed; top: 8px; left: 8px; font: 12px monospace; color: #0f6; white-space: pre; pointer-events: none; }
 </style>
 </head>
