@@ -9,7 +9,7 @@ export interface Hand {
   label: string;
   points: Vec2[]; // canvas px, smoothed
   pinching: boolean;
-  ratio: number; // NaN until pinch.ts is implemented
+  ratio: number;
   pinchPoint: Vec2 | null;
 }
 
@@ -33,21 +33,10 @@ export function processResult(
     seen.add(label);
     const raw = lms.map((p) => toCanvas(p.x, p.y, t, canvasW, config.mirror));
     const points = filters.filter(label, raw, tSeconds);
-    let ratio = NaN;
-    let pinching = false;
-    let point: Vec2 | null = null;
-    try {
-      // TODO(remove): guard until core/pinch.ts is implemented
-      ratio = pinchRatio(points);
-      pinching = updatePinch(wasPinching.get(label) ?? false, ratio, config.pinch);
-      point = pinchPoint(points);
-    } catch {
-      ratio = NaN;
-      pinching = false;
-      point = null;
-    }
+    const ratio = pinchRatio(points);
+    const pinching = updatePinch(wasPinching.get(label) ?? false, ratio, config.pinch);
     wasPinching.set(label, pinching);
-    return { label, points, pinching, ratio, pinchPoint: Number.isFinite(ratio) ? point : null };
+    return { label, points, pinching, ratio, pinchPoint: Number.isFinite(ratio) ? pinchPoint(points) : null };
   });
   const present = new Set(hands.map((h) => h.label));
   filters.keepOnly(present);

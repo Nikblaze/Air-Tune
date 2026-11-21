@@ -1,6 +1,7 @@
-// [YOU WRITE] Pinch detection (SPEC §3.1). Pure: no DOM, no MediaPipe.
-// Replace each `throw` with your implementation, then run `npm test`.
-import type { Vec2 } from "./vec2";
+// Pinch detection (SPEC §3.1). Pure: no DOM, no MediaPipe.
+// Learning exercise: the stub + failing-test version lives in git history
+// ("exercise: Phase 1 pinch.ts contract").
+import { dist, mid, type Vec2 } from "./vec2";
 
 /** MediaPipe hand landmark indices used by the app. */
 export const LM = {
@@ -27,8 +28,9 @@ export interface PinchThresholds {
  * @returns the ratio, or `Infinity` if hand scale is 0 (degenerate hand never pinches).
  */
 export function pinchRatio(hand: readonly Vec2[]): number {
-  void hand;
-  throw new Error("TODO: implement pinchRatio");
+  const scale = dist(hand[LM.WRIST], hand[LM.MIDDLE_MCP]);
+  if (scale === 0) return Infinity;
+  return dist(hand[LM.THUMB_TIP], hand[LM.INDEX_TIP]) / scale;
 }
 
 /**
@@ -36,8 +38,7 @@ export function pinchRatio(hand: readonly Vec2[]): number {
  * @param hand 21 landmarks in canvas pixels.
  */
 export function pinchPoint(hand: readonly Vec2[]): Vec2 {
-  void hand;
-  throw new Error("TODO: implement pinchPoint");
+  return mid(hand[LM.THUMB_TIP], hand[LM.INDEX_TIP]);
 }
 
 /**
@@ -51,8 +52,6 @@ export function pinchPoint(hand: readonly Vec2[]): Vec2 {
  * @returns new pinching state
  */
 export function updatePinch(wasPinching: boolean, ratio: number, th: PinchThresholds): boolean {
-  void wasPinching;
-  void ratio;
-  void th;
-  throw new Error("TODO: implement updatePinch");
+  // Infinity > off, so a degenerate hand always releases / never engages.
+  return wasPinching ? !(ratio > th.off) : ratio < th.on;
 }
