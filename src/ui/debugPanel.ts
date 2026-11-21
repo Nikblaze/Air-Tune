@@ -1,5 +1,5 @@
 import GUI from "lil-gui";
-import type { config as Config } from "../config";
+import { INTENSITIES, type config as Config } from "../config";
 import { SCALES } from "../core/music";
 
 /** Live tuning panel. Hidden by default; press D to toggle. */
@@ -31,6 +31,16 @@ export function createDebugPanel(config: typeof Config): GUI {
   pluck.add(config, "pluckCooldownMs", 0, 500, 10);
   pluck.add(config, "pluckMaxVelocity", 500, 6000, 100);
   pluck.add(config, "maxFingerJumpPx", 100, 1000, 10);
+  const visuals = gui.addFolder("Visuals");
+  visuals.add(config.visuals, "intensity", [...INTENSITIES]);
+  visuals.add(config.vibration, "damping", 0.5, 8, 0.1);
+  visuals.add(config.vibration, "maxAmplitudePx", 5, 80, 1);
+  visuals.add(config.vibration, "freqBase", 1, 20, 0.5);
+  visuals.add(config.vibration, "freqRange", 0, 30, 0.5);
+  visuals.add(config.vibration, "restEnergy", 0.0001, 0.05, 0.0001);
+  visuals.add(config.particles, "gravity", 0, 1500, 10);
+  visuals.add(config.particles, "speed", 100, 1500, 10);
+  visuals.add(config.particles, "spread", 0, 1.5, 0.05);
   const debug = gui.addFolder("Debug");
   debug.add(config.debug, "showSkeleton");
   debug.add(config, "mirror");

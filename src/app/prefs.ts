@@ -1,5 +1,5 @@
 // Persisted user prefs (SPEC §10.6). Storage is injected so tests don't need a browser.
-import { config } from "../config";
+import { config, INTENSITIES, type Intensity } from "../config";
 import { SCALES, type ScaleId } from "../core/music";
 
 export interface Prefs {
@@ -8,6 +8,7 @@ export interface Prefs {
   rootMidi: number;
   volume: number;
   showSkeleton: boolean;
+  intensity: Intensity;
 }
 
 const KEY = "airStrings.prefs.v1";
@@ -19,6 +20,7 @@ const DEFAULTS: Prefs = {
   rootMidi: config.music.rootMidi,
   volume: config.audio.volume,
   showSkeleton: config.debug.showSkeleton,
+  intensity: config.visuals.intensity,
 };
 
 // localStorage access itself can throw (blocked storage), so even the default is guarded.
@@ -42,6 +44,7 @@ export function loadPrefs(storage: Pick<Storage, "getItem"> | null = defaultStor
       rootMidi: Math.round(num(raw.rootMidi, DEFAULTS.rootMidi)),
       volume: Math.min(1, Math.max(0, num(raw.volume, DEFAULTS.volume))),
       showSkeleton: typeof raw.showSkeleton === "boolean" ? raw.showSkeleton : DEFAULTS.showSkeleton,
+      intensity: INTENSITIES.includes(raw.intensity) ? raw.intensity : DEFAULTS.intensity,
     };
   } catch {
     return { ...DEFAULTS };
@@ -61,4 +64,5 @@ export function applyPrefs(p: Prefs): void {
   config.music.rootMidi = p.rootMidi;
   config.audio.volume = p.volume;
   config.debug.showSkeleton = p.showSkeleton;
+  config.visuals.intensity = p.intensity;
 }

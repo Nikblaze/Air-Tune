@@ -89,7 +89,8 @@ describe("StringManager", () => {
       m.detectPlucks(swipe(), 1000);
       expect(got).toHaveLength(1);
       expect(got[0].stringId).toBe(s.id);
-      expect(s.lastPluck).toEqual({ at: 1000, velocity: got[0].velocity });
+      expect(s.lastPluck).toEqual({ at: 1000, velocity: got[0].velocity, t: 0.5, direction: -1 });
+      expect(s.e0).toBeGreaterThan(0);
     });
 
     it("cooldown blocks a repeat within pluckCooldownMs and allows it after", () => {

@@ -1,6 +1,9 @@
 // All tunable numbers live here (no magic numbers in logic files).
 import type { ScaleId } from "./core/music";
 
+export const INTENSITIES = ["low", "medium", "high"] as const;
+export type Intensity = (typeof INTENSITIES)[number];
+
 export const config = {
   wasmBaseUrl: "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.2.3/wasm",
   modelUrl:
@@ -31,8 +34,21 @@ export const config = {
     minSemis: -12,
     maxSemis: 18, // 2.5 octaves
   },
+  // Pluck vibration (SPEC §5.1). Real pitch (hundreds of Hz) is invisible, so ω1 is slowed to
+  // 2π·(freqBase + pitchFactor·freqRange) rad/s: higher notes visibly shimmer faster.
+  vibration: { modes: 6, samples: 48, damping: 2.5, maxAmplitudePx: 26, freqBase: 6, freqRange: 10, restEnergy: 0.002 },
+  // Effect intensity (SPEC §10.6): glow passes, blur on the wide pass (px), particle count multiplier.
+  visuals: {
+    intensity: "medium" as Intensity,
+    levels: {
+      low: { passes: 1, blur: 0, particles: 0.4 },
+      medium: { passes: 3, blur: 14, particles: 1 },
+      high: { passes: 3, blur: 28, particles: 1.6 },
+    } satisfies Record<Intensity, { passes: number; blur: number; particles: number }>,
+    maxDtSec: 0.05, // clamp physics dt so a tab switch doesn't explode particles
+  },
+  particles: { pool: 600, minCount: 20, maxCount: 40, speed: 600, spread: 0.6, gravity: 400, lifeMin: 0.4, lifeMax: 0.9, radius: 2.5 },
   pluckCooldownMs: 120, // per (string, finger): one swipe = one pluck
-  pluckFlashMs: 150, // brighter string after a pluck (Phase 4 replaces with real vibration)
   pluckMaxVelocity: 3000, // px/s that maps to velocity 1
   pluckMinVelocity: 0.15, // floor so gentle touches still sound
   maxFingerJumpPx: 400, // bigger per-detection jump = tracking glitch, not a strum (SPEC §9)

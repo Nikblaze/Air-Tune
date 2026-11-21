@@ -1,5 +1,6 @@
 import { config } from "../config";
 import { segmentIntersect } from "../core/intersect";
+import { energy, pluckCoefficients } from "../core/stringModes";
 import { dist, type Vec2 } from "../core/vec2";
 import type { Bus } from "../events";
 import type { StringEntity } from "./StringEntity";
@@ -21,7 +22,18 @@ export class StringManager {
 
   /** `pitch` is computed by the caller so this class stays free of canvas-size/scale knowledge. */
   add(a: Vec2, b: Vec2, now: number, pitch = { midi: 0, hz: 0 }): StringEntity {
-    const s: StringEntity = { id: this.nextId++, a, b, createdAt: now, fadeStart: null, ...pitch, lastPluck: null };
+    const s: StringEntity = {
+      id: this.nextId++,
+      a,
+      b,
+      createdAt: now,
+      fadeStart: null,
+      ...pitch,
+      lastPluck: null,
+      coeffs: new Float64Array(config.vibration.modes),
+      omega1: 0,
+      e0: 0,
+    };
     this.strings.push(s);
     this.bus.emit("stringCreated", { string: s });
     // Over the cap: fade the oldest live string instead of erroring (SPEC §10.5).
@@ -56,10 +68,25 @@ export class StringManager {
         this.lastHit.set(k, now);
         const speed = dist(f.p0, f.p1) / f.dt; // px/s
         const velocity = Math.min(1, Math.max(config.pluckMinVelocity, speed / config.pluckMaxVelocity));
-        s.lastPluck = { at: now, velocity };
+        s.lastPluck = { at: now, velocity, t: hit.t, direction: hit.direction };
+        this.excite(s, hit.t, hit.direction, velocity);
         this.bus.emit("stringPlucked", { stringId: s.id, t: hit.t, velocity, direction: hit.direction });
       }
     }
+  }
+
+  /**
+   * Set the string vibrating. A new pluck REPLACES the previous excitation.
+   * ponytail: superposition of multiple excitations if the restart looks abrupt.
+   */
+  private excite(s: StringEntity, t: number, direction: 1 | -1, velocity: number): void {
+    const v = config.vibration;
+    const m = config.music;
+    // direction = side the finger came from, so the finger pushes the string the OTHER way (-direction).
+    pluckCoefficients(t, -direction * velocity * v.maxAmplitudePx, v.modes, s.coeffs);
+    const pitchFactor = Math.min(1, Math.max(0, (s.midi - (m.rootMidi + m.minSemis)) / (m.maxSemis - m.minSemis)));
+    s.omega1 = 2 * Math.PI * (v.freqBase + pitchFactor * v.freqRange);
+    s.e0 = energy(0, s.coeffs, v.damping);
   }
 
   undo(now: number): void {

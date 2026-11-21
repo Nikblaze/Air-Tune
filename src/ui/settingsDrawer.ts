@@ -1,5 +1,5 @@
 // Right-side settings drawer (SPEC §10.6, v1 subset). An overlay on PLAYING, not an app state.
-import { config } from "../config";
+import { config, INTENSITIES, type Intensity } from "../config";
 import { SCALES, type ScaleId } from "../core/music";
 
 const NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
@@ -20,12 +20,14 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
       <select data-k="note" aria-label="Note">${options(NOTES.map((n, i) => [i, n]))}</select>
       <select data-k="octave" aria-label="Octave">${options(OCTAVES.map((o) => [o, String(o)]))}</select></span></label>
     <label>Volume <input type="range" data-k="volume" min="0" max="1" step="0.01" /></label>
+    <label>Effect intensity <select data-k="intensity">${options(INTENSITIES.map((i) => [i, i[0].toUpperCase() + i.slice(1)]))}</select></label>
     <label class="check"><input type="checkbox" data-k="skeleton" /> Hand skeleton</label>
     <p class="caption">Existing strings keep their notes; only new strings use the new scale and root.</p>`;
   document.body.append(el);
   const f = <T extends HTMLElement>(k: string) => el.querySelector<T>(`[data-k="${k}"]`)!;
   const scale = f<HTMLSelectElement>("scale"), note = f<HTMLSelectElement>("note"), octave = f<HTMLSelectElement>("octave");
   const volume = f<HTMLInputElement>("volume"), skeleton = f<HTMLInputElement>("skeleton");
+  const intensity = f<HTMLSelectElement>("intensity");
 
   const sync = () => {
     scale.value = config.music.scale;
@@ -33,6 +35,7 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
     octave.value = String(Math.floor(config.music.rootMidi / 12) - 1);
     volume.value = String(config.audio.volume);
     skeleton.checked = config.debug.showSkeleton;
+    intensity.value = config.visuals.intensity;
   };
 
   const open = () => {
@@ -50,6 +53,7 @@ export function createSettingsDrawer({ onChange }: { onChange: () => void }) {
     config.music.rootMidi = 12 * (Number(octave.value) + 1) + Number(note.value);
     config.audio.volume = Number(volume.value);
     config.debug.showSkeleton = skeleton.checked;
+    config.visuals.intensity = intensity.value as Intensity;
     onChange();
   });
   el.querySelector("[data-close]")!.addEventListener("click", close);

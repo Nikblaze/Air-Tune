@@ -2,7 +2,8 @@ import { applyPrefs, loadPrefs, savePrefs } from "./app/prefs";
 import { createAppState, type AppState } from "./app/appState";
 import { config } from "./config";
 import { getAudio } from "./audio/engine";
-import { lengthToMidi, midiToHz, noteName, SCALES, tickFractions, type MusicOpts } from "./core/music";
+import { lengthToMidi, midiToHz, noteName, pitchHue, SCALES, tickFractions, type MusicOpts } from "./core/music";
+import { createParticles } from "./core/particles";
 import { dist } from "./core/vec2";
 import { bus } from "./events";
 import { render } from "./render/renderer";
@@ -95,6 +96,7 @@ async function requestCamera() {
   let detectFps = 0;
   let lastDetect = last;
   let hands: Hand[] = [];
+  const particles = createParticles(config.particles.pool, config.particles);
   const gesture = createGestureController();
   const manager = new StringManager(bus);
   const fingers = createFingerTracker();
@@ -111,6 +113,7 @@ async function requestCamera() {
         rootMidi: config.music.rootMidi,
         volume: config.audio.volume,
         showSkeleton: config.debug.showSkeleton,
+        intensity: config.visuals.intensity,
       });
       savePrefs(prefs);
     },
@@ -132,10 +135,25 @@ async function requestCamera() {
     const W = window.innerWidth;
     const pan = ((s.a.x + s.b.x) / 2 / W) * 1.6 - 0.8; // [0,W] -> [-0.8,0.8]
     getAudio().pluck({ hz: s.hz, velocity: e.velocity, pan });
+    // Sparks fly the way the finger was moving: away from the side it came from (-direction).
+    const len = dist(s.a, s.b) || 1;
+    const k = -e.direction / len;
+    const cfg = config.particles;
+    const count = Math.round((cfg.minCount + (cfg.maxCount - cfg.minCount) * e.velocity) * config.visuals.levels[config.visuals.intensity].particles);
+    particles.spawn(
+      s.a.x + (s.b.x - s.a.x) * e.t,
+      s.a.y + (s.b.y - s.a.y) * e.t,
+      -(s.b.y - s.a.y) * k,
+      (s.b.x - s.a.x) * k,
+      pitchHue(s.midi),
+      count,
+      cfg.speed * (0.4 + 0.6 * e.velocity),
+    );
   });
 
   const frame = (now: number) => {
     renderFps = a * renderFps + (1 - a) * (1000 / Math.max(now - last, 1));
+    const dt = Math.min(config.visuals.maxDtSec, (now - last) / 1000);
     last = now;
     const r = detect(landmarker, video, now);
     const W = window.innerWidth;
@@ -156,14 +174,17 @@ async function requestCamera() {
       manager.add(g.commit.a, g.commit.b, now, { midi, hz: midiToHz(midi) });
     }
     manager.update(now);
+    particles.update(dt);
     tutorial?.update(hands, g.state, now); // after manager.add so a commit's stringCreated is seen this frame
     const len = g.preview ? dist(g.preview.a, g.preview.b) : 0;
+    const previewMidi = g.preview ? lengthToMidi(len, opts) : 0;
     const preview = g.preview && {
       ...g.preview,
-      label: noteName(lengthToMidi(len, opts)),
+      label: noteName(previewMidi),
+      color: `hsl(${pitchHue(previewMidi)}, 100%, 65%)`,
       ticks: tickFractions(len, opts),
     };
-    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), now, preview, hands });
+    render(ctx, { video, t, W, H, strings: manager.strings, alphaOf: (s) => manager.alpha(s, now), now, preview, hands, particles });
     hints.update({ hands, now, video });
     hud.setLabel(
       config.music.pitchMode === "free" ? "Free pitch" : `${noteName(config.music.rootMidi)} \u00b7 ${SCALES[config.music.scale].name}`,
